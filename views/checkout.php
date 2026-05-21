@@ -405,280 +405,198 @@ body{
     color:white;
 
     font-size:18px;
-
     font-weight:bold;
-
     cursor:pointer;
-
     transition:0.2s;
 }
 
 .order-btn:hover{
-
     background:#e63d8d;
 }
 
 .payment-box{
-
     margin-top:25px;
 }
 
 .cod-method{
-
     margin-top:10px;
-
     background:#fff0f7;
-
     padding:15px;
-
     border-radius:12px;
-
     display:flex;
-
     align-items:center;
-
     gap:10px;
 }
 
 .checkout-qty{
-
     display:flex;
-
     align-items:center;
-
     gap:10px;
 }
 
 /* ADDRESS */
 .address-box{
-
     border:1px solid #ffd4ea;
-
     border-radius:16px;
-
     overflow:hidden;
-
     background:white;
 }
 
 /* TABS */
 .address-tabs{
-
     display:flex;
-
     border-bottom:1px solid #ffe3f1;
 }
 
 .tab-btn{
-
     flex:1;
-
     padding:14px;
-
     border:none;
-
     background:white;
-
     cursor:pointer;
-
     font-weight:bold;
-
     color:#666;
-
     transition:0.2s;
 }
 
 .tab-btn.active{
 
     background:#fff0f7;
-
     color:#ff4fa3;
 }
 
 /* LIST */
 .address-list{
-
     max-height:300px;
-
     overflow-y:auto;
-
     padding:10px;
 }
 
 /* ITEM */
 .address-item{
-
     padding:12px;
-
     border-radius:10px;
-
     cursor:pointer;
-
     transition:0.2s;
 }
 
 .address-item:hover{
-
     background:#fff0f7;
-
     color:#ff4fa3;
 }
 
 /* SHIPPING METHOD */
 .shipping-method{
-
     display:flex;
-
     justify-content:space-between;
-
     align-items:center;
-
     background:#fff0f7;
-
     padding:15px 18px;
-
     border-radius:14px;
-
     margin-top:10px;
 }
 
 .shipping-left{
-
     display:flex;
-
     align-items:center;
-
     gap:12px;
 }
 
 .shipping-price{
-
     color:#ff4fa3;
-
     font-weight:bold;
 }
 .shipping-text{
-
     display:flex;
-
     flex-direction:column;
 }
 
 .shipping-title{
-
     white-space:nowrap;
-
     font-weight:bold;
 }
 
 .shipping-desc{
-
     margin-top:4px;
-
     color:#777;
-
     white-space:nowrap;
 }
 
 </style>
-
 </head>
-
 <body>
-
 <?php include 'layout/header.php'; ?>
 
 <div class="checkout-container">
 
     <!-- LEFT -->
     <div class="checkout-left">
-
         <div class="section-title">
             Thông tin giao hàng
         </div>
 
         <div class="form-group">
-
             <label>Họ và tên</label>
-
             <input type="text"
             placeholder="Nhập họ và tên">
 
         </div>
 
         <div class="form-group">
-
             <label>Số điện thoại</label>
-
             <input type="text"
             placeholder="Nhập số điện thoại">
 
         </div>
 
         <div class="form-group">
-
             <label>Email</label>
-
             <input type="email"
             placeholder="Nhập email (không bắt buộc)">
 
         </div>
 
         <div class="form-group">
-
             <label>Địa chỉ, tên đường</label>
-
             <input type="text"
             placeholder="Địa chỉ, tên đường">
 
         </div>
 
         <div class="form-group">
+            <label>Địa chỉ</label>
 
-    <label>Địa chỉ</label>
+            <div class="address-box">
 
-    <div class="address-box">
+                <!-- TAB -->
+                <div class="address-tabs">
 
-        <!-- TAB -->
-        <div class="address-tabs">
+                    <button type="button"
+                        class="tab-btn active"
+                        id="provinceTab">
+                        Tỉnh / Thành phố
+                    </button>
 
-            <button type="button"
-                class="tab-btn active"
-                id="provinceTab">
+                    <button type="button"
+                        class="tab-btn"
+                        id="districtTab">
+                        Quận / Huyện
+                    </button>
 
-                Tỉnh / Thành phố
+                    <button type="button"
+                        class="tab-btn"
+                        id="wardTab">
+                        Phường / Xã
+                    </button>
+                </div>
 
-            </button>
-
-            <button type="button"
-                class="tab-btn"
-                id="districtTab">
-
-                Quận / Huyện
-
-            </button>
-
-            <button type="button"
-                class="tab-btn"
-                id="wardTab">
-
-                Phường / Xã
-
-            </button>
-
+                <!-- LIST -->
+                <div class="address-list"
+                    id="addressList">
+                    Đang tải...
+                </div>
+            </div>
         </div>
-
-        <!-- LIST -->
-        <div class="address-list"
-            id="addressList">
-
-            Đang tải...
-
-        </div>
-
-    </div>
-
-</div>
 
         <div class="form-group">
             <label>Phương thức giao hàng</label>
@@ -693,11 +611,8 @@ body{
         </div>
 
         <div class="payment-box">
-
             <h3>Phương thức thanh toán</h3>
-
             <div class="cod-method">
-
                 <input type="radio"
                     checked
                     disabled>
@@ -705,17 +620,12 @@ body{
                 <span>
                     Thanh toán khi nhận hàng (COD)
                 </span>
-
             </div>
-
         </div>
 
         <div class="form-group">
-
             <label>Ghi chú đơn hàng</label>
-
             <textarea></textarea>
-
         </div>
 
     </div>
@@ -756,28 +666,32 @@ body{
 
                     <div class="qty-box">
 
-                        <a href="../controllers/CartController.php?action=decrease&id=<?php echo $id; ?>&redirect=checkout&ids=<?php echo implode(',', $selectedIds); ?>">
+                        <button class="qty-btn"
+                            onclick="updateQty(<?php echo $id; ?>, 'decrease')">
 
-                            <button class="qty-btn">-</button>
+                            -
 
-                        </a>
+                        </button>
 
-                        <span><?php echo $qty; ?></span>
+                        <span id="qty-<?php echo $id; ?>">
+                            <?php echo $qty; ?>
+                        </span>
 
-                        <a href="../controllers/CartController.php?action=increase&id=<?php echo $id; ?>&redirect=checkout&ids=<?php echo implode(',', $selectedIds); ?>">
+                        <button class="qty-btn"
+                            onclick="updateQty(<?php echo $id; ?>, 'increase')">
 
-                            <button class="qty-btn">+</button>
+                            +
 
-                        </a>
+                        </button>
 
                     </div>
 
-                    <div class="product-price">
-
+                    <div class="product-price"
+                        id="price-<?php echo $id; ?>"
+                        data-price="<?php echo $product['price']; ?>">
                         <span class="old-price">
                             <?php echo number_format($product['price'] + 100000); ?>₫
                         </span>
-
                         <?php echo number_format($product['price']); ?>₫
 
                     </div>
@@ -806,7 +720,8 @@ body{
 
             <div class="summary-row">
                 <span>Tổng tiền hàng</span>
-                <span id="productTotal">
+                <span id="productTotal"
+                    data-total="<?php echo $total; ?>">
                     <?php echo number_format($total); ?>₫
                 </span>
             </div>
@@ -835,270 +750,348 @@ body{
 
 </div>
 
-<script>
-    let selectedProvinceName = "";
-    let selectedDistrictName = "";
-    let selectedWardName = "";
+    <script>
+        let selectedProvinceName = "";
+        let selectedDistrictName = "";
+        let selectedWardName = "";
 
-    /* LOAD PROVINCE */
-    fetch("https://provinces.open-api.vn/api/p/")
-        .then(res => res.json())
-        .then(data => {
-
-            renderProvince(data);
-        });
-
-    /* RENDER PROVINCE */
-    function renderProvince(data){
-
-        let list =
-            document.getElementById("addressList");
-
-        list.innerHTML = "";
-
-        data.forEach(item => {
-
-            list.innerHTML += `
-                <div class="address-item"
-                    onclick="selectProvince(${item.code})">
-
-                    ${item.name}
-
-                </div>
-            `;
-        });
-    }
-
-    /* SELECT PROVINCE */
-    function selectProvince(code, name){
-
-        selectedProvinceCode = code;
-        selectedProvinceName = name;
-
-
-        document.getElementById("districtTab")
-            .classList.add("active");
-
-        fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`)
-            .then(res => res.json())
-            .then(data => {
-
-                renderDistrict(data.districts);
-            });
-    }
-
-    /* RENDER DISTRICT */
-    function renderProvince(data){
-
-        let list =
-            document.getElementById("addressList");
-
-        list.innerHTML = "";
-
-        data.forEach(item => {
-
-            list.innerHTML += `
-                <div class="address-item"
-                    onclick="selectProvince(${item.code}, '${item.name}')">
-
-                    ${item.name}
-
-                </div>
-            `;
-        });
-    }
-
-    /* SELECT DISTRICT */
-    function selectDistrict(code, name){
-
-        selectedDistrictCode = code;
-        selectedDistrictName = name;
-
-        document.getElementById("wardTab")
-            .classList.add("active");
-
-        fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`)
-            .then(res => res.json())
-            .then(data => {
-
-                renderWard(data.wards);
-            });
-    }
-
-    function renderDistrict(data){
-        let list =
-            document.getElementById("addressList");
-
-        list.innerHTML = "";
-
-        data.forEach(item => {
-
-            list.innerHTML += `
-                <div class="address-item"
-                    onclick="selectDistrict(${item.code}, '${item.name}')">
-
-                    ${item.name}
-
-                </div>
-            `;
-        });
-    }
-
-    /* RENDER WARD */
-    function renderWard(data){
-
-        let list =
-            document.getElementById("addressList");
-
-        list.innerHTML = "";
-
-        data.forEach(item => {
-
-            list.innerHTML += `
-                <div class="address-item"
-                    onclick="selectWard('${item.name}')">
-
-                    ${item.name}
-
-                </div>
-            `;
-        });
-    }
-
-    function selectWard(name){
-
-        selectedWardName = name;
-
-        let fullAddress =
-            selectedWardName + ", "
-            + selectedDistrictName + ", "
-            + selectedProvinceName;
-
-        /* HIỆN ĐỊA CHỈ */
-        document.getElementById("addressList")
-            .innerHTML = `
-                <div class="address-item"
-                    style="
-                        background:#fff0f7;
-                        color:#ff4fa3;
-                        font-weight:bold;
-                    ">
-                    ${fullAddress}
-                </div>
-            `;
-
-        /* TÍNH SHIP */
-        let ship = 30000;
-
-        if(
-            selectedProvinceName === "Hà Nội"
-            || selectedProvinceName === "TP Hồ Chí Minh"
-        ){
-            ship = 15000;
-        }
-
-        if(
-            selectedProvinceName === "Đà Nẵng"
-            || selectedProvinceName === "Hải Phòng"
-            || selectedProvinceName === "Cần Thơ"
-        ){
-            ship = 25000;
-        }
-
-        /* HIỆN SHIPPING */
-        document.getElementById("shippingBox")
-            .innerHTML = `
-                <div class="shipping-method">
-
-                    <div class="shipping-left">
-
-                        <input type="radio"
-                            checked>
-
-                        <div class="shipping-text">
-
-                            <div class="shipping-title">
-                                Giao hàng tận nơi
-                            </div>
-
-                            <small class="shipping-desc">
-                                Nhận hàng từ 2 - 5 ngày
-                            </small>
-
-                        </div>
-
-                    </div>
-
-                    <div class="shipping-price">
-
-                        ${ship.toLocaleString()}₫
-
-                    </div>
-
-                </div>
-            `;
-
-        /* UPDATE TOTAL */
-        updateTotal(ship);
-    }
-
-    /* CLICK TAB */
-    document.getElementById("provinceTab")
-        .onclick = function(){
-
+        /* LOAD PROVINCE */
         fetch("https://provinces.open-api.vn/api/p/")
             .then(res => res.json())
             .then(data => {
 
                 renderProvince(data);
             });
-    };
 
-    document.getElementById("districtTab")
-        .onclick = function(){
+        /* RENDER PROVINCE */
+        function renderProvince(data){
 
-        if(!selectedProvinceCode) return;
+            let list =
+                document.getElementById("addressList");
 
-        fetch(`https://provinces.open-api.vn/api/p/${selectedProvinceCode}?depth=2`)
-            .then(res => res.json())
-            .then(data => {
+            list.innerHTML = "";
 
-                renderDistrict(data.districts);
+            data.forEach(item => {
+
+                list.innerHTML += `
+                    <div class="address-item"
+                        onclick="selectProvince(${item.code})">
+
+                        ${item.name}
+
+                    </div>
+                `;
             });
-    };
+        }
 
-    document.getElementById("wardTab")
-        .onclick = function(){
+        /* SELECT PROVINCE */
+        function selectProvince(code, name){
 
-        if(!selectedDistrictCode) return;
+            selectedProvinceCode = code;
+            selectedProvinceName = name;
 
-        fetch(`https://provinces.open-api.vn/api/d/${selectedDistrictCode}?depth=2`)
-            .then(res => res.json())
-            .then(data => {
 
-                renderWard(data.wards);
+            document.getElementById("districtTab")
+                .classList.add("active");
+
+            fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`)
+                .then(res => res.json())
+                .then(data => {
+
+                    renderDistrict(data.districts);
+                });
+        }
+
+        /* RENDER DISTRICT */
+        function renderProvince(data){
+
+            let list =
+                document.getElementById("addressList");
+
+            list.innerHTML = "";
+
+            data.forEach(item => {
+
+                list.innerHTML += `
+                    <div class="address-item"
+                        onclick="selectProvince(${item.code}, '${item.name}')">
+
+                        ${item.name}
+
+                    </div>
+                `;
             });
-    };
+        }
 
-    function updateTotal(ship){
-        let productTotal =
-            <?php echo $total; ?>;
+        /* SELECT DISTRICT */
+        function selectDistrict(code, name){
 
-        let finalTotal =
-            productTotal + ship;
+            selectedDistrictCode = code;
+            selectedDistrictName = name;
 
-        /* SHIP */
-        document.getElementById("shippingFee")
-            .innerText =
-                ship.toLocaleString() + "₫";
+            document.getElementById("wardTab")
+                .classList.add("active");
 
-        /* TOTAL */
-        document.getElementById("finalTotal")
-            .innerText =
-                finalTotal.toLocaleString() + "₫";
+            fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`)
+                .then(res => res.json())
+                .then(data => {
+
+                    renderWard(data.wards);
+                });
+        }
+
+        function renderDistrict(data){
+            let list =
+                document.getElementById("addressList");
+
+            list.innerHTML = "";
+
+            data.forEach(item => {
+
+                list.innerHTML += `
+                    <div class="address-item"
+                        onclick="selectDistrict(${item.code}, '${item.name}')">
+
+                        ${item.name}
+
+                    </div>
+                `;
+            });
+        }
+
+        /* RENDER WARD */
+        function renderWard(data){
+
+            let list =
+                document.getElementById("addressList");
+
+            list.innerHTML = "";
+
+            data.forEach(item => {
+
+                list.innerHTML += `
+                    <div class="address-item"
+                        onclick="selectWard('${item.name}')">
+
+                        ${item.name}
+
+                    </div>
+                `;
+            });
+        }
+
+        function selectWard(name){
+
+            selectedWardName = name;
+
+            let fullAddress =
+                selectedWardName + ", "
+                + selectedDistrictName + ", "
+                + selectedProvinceName;
+
+            /* HIỆN ĐỊA CHỈ */
+            document.getElementById("addressList")
+                .innerHTML = `
+                    <div class="address-item"
+                        style="
+                            background:#fff0f7;
+                            color:#ff4fa3;
+                            font-weight:bold;
+                        ">
+                        ${fullAddress}
+                    </div>
+                `;
+
+            /* TÍNH SHIP */
+            let ship = 30000;
+
+            if(
+                selectedProvinceName === "Hà Nội"
+                || selectedProvinceName === "TP Hồ Chí Minh"
+            ){
+                ship = 15000;
+            }
+
+            if(
+                selectedProvinceName === "Đà Nẵng"
+                || selectedProvinceName === "Hải Phòng"
+                || selectedProvinceName === "Cần Thơ"
+            ){
+                ship = 25000;
+            }
+
+            /* HIỆN SHIPPING */
+            document.getElementById("shippingBox")
+                .innerHTML = `
+                    <div class="shipping-method">
+
+                        <div class="shipping-left">
+
+                            <input type="radio"
+                                checked>
+
+                            <div class="shipping-text">
+
+                                <div class="shipping-title">
+                                    Giao hàng tận nơi
+                                </div>
+
+                                <small class="shipping-desc">
+                                    Nhận hàng từ 2 - 5 ngày
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                        <div class="shipping-price">
+
+                            ${ship.toLocaleString()}₫
+
+                        </div>
+
+                    </div>
+                `;
+
+            /* UPDATE TOTAL */
+            updateTotal(ship);
+        }
+
+        /* CLICK TAB */
+        document.getElementById("provinceTab")
+            .onclick = function(){
+
+            fetch("https://provinces.open-api.vn/api/p/")
+                .then(res => res.json())
+                .then(data => {
+
+                    renderProvince(data);
+                });
+        };
+
+        document.getElementById("districtTab")
+            .onclick = function(){
+
+            if(!selectedProvinceCode) return;
+
+            fetch(`https://provinces.open-api.vn/api/p/${selectedProvinceCode}?depth=2`)
+                .then(res => res.json())
+                .then(data => {
+
+                    renderDistrict(data.districts);
+                });
+        };
+
+        document.getElementById("wardTab")
+            .onclick = function(){
+
+            if(!selectedDistrictCode) return;
+
+            fetch(`https://provinces.open-api.vn/api/d/${selectedDistrictCode}?depth=2`)
+                .then(res => res.json())
+                .then(data => {
+
+                    renderWard(data.wards);
+                });
+        };
+
+        function updateTotal(ship){
+            let productTotal =
+                <?php echo $total; ?>;
+
+            let finalTotal =
+                productTotal + ship;
+
+            /* SHIP */
+            document.getElementById("shippingFee")
+                .innerText =
+                    ship.toLocaleString() + "₫";
+
+            /* TOTAL */
+            document.getElementById("finalTotal")
+                .innerText =
+                    finalTotal.toLocaleString() + "₫";
+        }
+
+    </script>
+
+    <script>
+
+    async function updateQty(id, action){
+
+        let response = await fetch(
+            `../controllers/CartController.php?action=${action}&id=${id}&ajax=1`
+        );
+
+        let data = await response.json();
+
+        /* lấy số lượng hiện tại */
+        let qtyElement =
+            document.getElementById("qty-" + id);
+
+        let qty =
+            parseInt(qtyElement.innerText);
+
+        if(action === "increase"){
+            qty++;
+        }else{
+            if(qty > 1){
+                qty--;
+            }
+        }
+
+        qtyElement.innerText = qty;
+
+        /* GIÁ 1 SP */
+        let priceElement =
+            document.getElementById("price-" + id);
+
+        let price =
+            parseInt(priceElement.dataset.price);
+
+        /* UPDATE GIÁ SP */
+        let subtotal = price * qty;
+
+        priceElement.innerHTML =
+            subtotal.toLocaleString() + "₫";
+
+        /* UPDATE TỔNG */
+        updateAllTotal();
     }
 
-</script>
+    /* TÍNH LẠI TOTAL */
+    function updateAllTotal(){
 
+        let productTotal = 0;
+
+        document.querySelectorAll(".product-price")
+            .forEach(item => {
+
+                let text =
+                    item.innerText
+                        .replace(/[₫,.]/g, "");
+
+                productTotal += parseInt(text);
+            });
+
+        /* SHIP */
+        let shipText =
+            document.getElementById("shippingFee")
+                .innerText
+                .replace(/[₫,.]/g, "");
+
+        let ship = parseInt(shipText) || 0;
+
+        /* UPDATE */
+        document.getElementById("productTotal")
+            .innerText =
+                productTotal.toLocaleString() + "₫";
+
+        document.getElementById("finalTotal")
+            .innerText =
+                (productTotal + ship).toLocaleString() + "₫";
+    }
+
+    </script>
 </body>
 </html>
