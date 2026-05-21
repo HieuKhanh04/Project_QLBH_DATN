@@ -170,6 +170,7 @@ $total = 0;
 </head>
 
 <body>
+    <?php include 'layout/header.php'; ?>
 
     <div class="cart-header">
         <a href="index.php" class="home-icon">

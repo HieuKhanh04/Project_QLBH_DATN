@@ -2,8 +2,10 @@
 
 session_start();
 
-session_unset();
-session_destroy();
+/* chỉ xoá thông tin đăng nhập */
+unset($_SESSION['user']);
 
-header('Location: views/login.php');
+/* chuyển về login */
+header('Location: login.php');
+
 exit;

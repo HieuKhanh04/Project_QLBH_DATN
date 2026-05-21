@@ -6,247 +6,452 @@ require_once '../config/database.php';
 require_once '../models/ProductModel.php';
 
 $productModel = new ProductModel($conn);
-$products = $productModel->getAllProducts() ?? [];
+
+$keyword = $_GET['keyword'] ?? '';
+
+if (!empty($keyword)) {
+    $products = $productModel->searchProducts($keyword);
+} else {
+    $products = $productModel->getAllProducts();
+}
 
 $count = 0;
 
 if (isset($_SESSION['cart'])) {
     $count = array_sum($_SESSION['cart']);
 }
-
 ?>
-
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 <meta charset="UTF-8">
-<title>Trang chủ</title>
+
+<title>HAN STORE</title>
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+rel="stylesheet">
 
 <style>
-    body {
-        margin: 0;
-        font-family: Arial;
-        background: #fff5f9;
-    }
 
-    /* HEADER */
-    .header {
-        background: #ff85c1;
-        padding: 15px 30px;
-        display: flex;
-        align-items: center;
-        position: relative;
-    }
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
 
-    /* LOGO */
-    .logo {
-        color: white;
-        font-size: 28px;
-        font-family: 'Pacifico', cursive;
-    }
+body{
+    font-family:Arial;
+    background:#fff7fb;
+}
 
-    /* SEARCH BOX (FIX 1 MÀU) */
-    .search-box {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 500px;
-        display: flex;
-        background: white;
-        border-radius: 30px;
-        overflow: hidden;
-        border: 2px solid #ff85c1;
-    }
+/* TOP BAR */
+.top-bar{
 
-    .search-box input {
-        flex: 1;
-        padding: 10px 15px;
-        border: none;
-        outline: none;
-    }
+    background:#ff85c1;
 
-    /* ICON SEARCH */
-    .search-box button {
-        background: white;
-        border: none;
-        padding: 0 15px;
-        cursor: pointer;
-        color: #ff85c1;
-        font-size: 16px;
-    }
+    color:white;
 
-    /* HEADER ICONS */
-.header-icons{
-    margin-left:auto;
+    text-align:center;
+
+    padding:10px;
+
+    font-size:14px;
+
+    letter-spacing:1px;
+}
+
+/* HEADER */
+.header{
+
+    background:white;
+
+    height:90px;
 
     display:flex;
+
     align-items:center;
+
+    justify-content:space-between;
+
+    padding:0 50px;
+
+    box-shadow:0 2px 10px rgba(0,0,0,0.05);
+
+    position:sticky;
+
+    top:0;
+
+    z-index:1000;
+}
+
+/* LOGO */
+.logo{
+
+    font-size:34px;
+
+    color:#ff4fa3;
+
+    font-family:'Pacifico', cursive;
+}
+
+/* MENU */
+.menu{
+
+    display:flex;
+
+    gap:35px;
+}
+
+.menu a{
+
+    text-decoration:none;
+
+    color:#333;
+
+    font-size:16px;
+
+    font-weight:bold;
+
+    transition:0.2s;
+}
+
+.menu a:hover{
+
+    color:#ff4fa3;
+}
+
+/* ICONS */
+.header-icons{
+
+    display:flex;
 
     gap:15px;
 }
 
-    /* ICON BOX */
-    .icon-box{
+.icon-box{
 
-        width:45px;
-        height:45px;
+    width:45px;
+    height:45px;
 
-        border-radius:50%;
+    border-radius:50%;
 
-        background:white;
+    background:#fff0f7;
 
-        display:flex;
-        align-items:center;
-        justify-content:center;
+    display:flex;
 
-        position:relative;
+    align-items:center;
+    justify-content:center;
 
-        text-decoration:none;
+    text-decoration:none;
 
-        box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    position:relative;
 
-        transition:0.2s;
-    }
+    transition:0.2s;
+}
 
-    /* ICON */
-    .icon-box i{
-        color:#ff85c1;
-        font-size:18px;
-    }
+.icon-box:hover{
 
-    /* HOVER */
-    .icon-box:hover{
-        transform:scale(1.08);
-    }
+    background:#ffd4ea;
 
-    /* BADGE */
-    .cart-count{
+    transform:scale(1.08);
+}
 
-        position:absolute;
+.icon-box i{
 
-        top:-5px;
-        right:-5px;
+    color:#ff4fa3;
 
-        background:red;
-        color:white;
+    font-size:18px;
+}
 
-        font-size:11px;
+/* CART COUNT */
+.cart-count{
 
-        min-width:18px;
-        height:18px;
+    position:absolute;
 
-        border-radius:50%;
+    top:-5px;
+    right:-5px;
 
-        display:flex;
-        align-items:center;
-        justify-content:center;
-    }
+    background:red;
 
-    /* BADGE SỐ LƯỢNG */
-    .cart-count {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        background: red;
-        color: white;
-        font-size: 12px;
-        padding: 3px 6px;
-        border-radius: 50%;
-    }
+    color:white;
 
-    /* GRID */
-    .product-list {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 20px;
-        padding: 20px;
-    }
+    min-width:18px;
+    height:18px;
 
-    /* CARD */
-    .product-card {
-        background: white;
-        border-radius: 12px;
-        padding: 15px;
-        text-align: center;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        transition: 0.3s;
-        cursor: pointer;
-    }
+    border-radius:50%;
 
-    .product-card:hover {
-        transform: translateY(-5px);
-    }
+    display:flex;
+    align-items:center;
+    justify-content:center;
 
-    .product-link{
-        text-decoration: none;
-        color: inherit;
-    }
+    font-size:11px;
+}
 
-    /* IMAGE */
-    .product-card img {
-        width: 100%;
-        height: 150px;
-        object-fit: cover;
-        border-radius: 10px;
-    }
+/* BANNER */
+.banner{
 
-    /* TEXT */
-    .product-card h3 {
-        margin: 10px 0;
-    }
+    margin:25px auto;
 
-    .product-card p {
-        color: #e05297;
-        font-weight: bold;
-    }
+    width:95%;
 
-    /* BUTTON */
-    .product-card a {
-        display: inline-block;
-        margin-top: 10px;
-        padding: 8px 12px;
-        background: #ff85c1;
-        color: white;
-        border-radius: 8px;
-        text-decoration: none;
-    }
-    .search-box{
-        position: relative; /* QUAN TRỌNG */
-    }
+    height:450px;
 
-    #suggest-box{
-         position:absolute;
-        top:45px;
-        left:0;
-        width:100%;
+    border-radius:25px;
 
-        background:white;
-        border:1px solid #eee;
-        border-radius:10px;
+    overflow:hidden;
 
-        max-height:250px;
-        overflow-y:auto;
+    position:relative;
 
-        z-index:999;
-    }
+    background:
+    linear-gradient(rgba(255,255,255,0.15),
+    rgba(255,255,255,0.15)),
 
-    .suggest-item{
-        padding:10px;
-        cursor:pointer;
-    }
+    url('https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1600');
 
-    .suggest-item:hover{
-        background:#ffe3f1;
-    }
+    background-size:cover;
+    background-position:center;
+
+    display:flex;
+
+    align-items:center;
+
+    padding-left:80px;
+}
+
+/* BANNER TEXT */
+.banner-content h1{
+
+    font-size:70px;
+
+    color:white;
+
+    text-shadow:0 4px 10px rgba(0,0,0,0.3);
+}
+
+.banner-content p{
+
+    margin-top:15px;
+
+    font-size:24px;
+
+    color:white;
+}
+
+.banner-btn{
+
+    display:inline-block;
+
+    margin-top:25px;
+
+    padding:14px 28px;
+
+    background:#ff4fa3;
+
+    color:white;
+
+    border-radius:12px;
+
+    text-decoration:none;
+
+    font-weight:bold;
+
+    transition:0.2s;
+}
+
+.banner-btn:hover{
+
+    background:#e63d8d;
+}
+
+/* SECTION TITLE */
+.section-title{
+
+    text-align:center;
+
+    margin:50px 0 30px;
+
+    font-size:32px;
+
+    color:#ff4fa3;
+}
+
+/* PRODUCTS */
+.product-list{
+
+    width:95%;
+
+    margin:40px auto;
+
+    display:grid;
+
+    grid-template-columns:repeat(4, 1fr);
+
+    gap:25px;
+}
+
+/* CARD */
+.product-card{
+
+    background:white;
+
+    border-radius:20px;
+
+    overflow:hidden;
+
+    box-shadow:0 4px 15px rgba(0,0,0,0.08);
+
+    transition:0.25s;
+
+    display:flex;
+
+    flex-direction:column;
+}
+
+.product-link{
+
+    text-decoration:none;
+
+    color:inherit;
+
+    display:block;
+}
+
+.product-card:hover{
+
+    transform:translateY(-8px);
+}
+
+/* IMAGE */
+.product-card img{
+
+    width:100%;
+
+    height:320px;
+
+    object-fit:cover;
+}
+
+/* INFO */
+.product-info{
+
+    padding:18px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+}
+
+.product-info h3{
+
+    font-size:18px;
+
+    margin-bottom:12px;
+
+    color:#333;
+}
+
+.price{
+
+    color:#ff4fa3;
+
+    font-size:22px;
+
+    font-weight:bold;
+
+    margin-bottom:15px;
+}
+
+/* BUTTON */
+.add-btn{
+
+    display:block;
+
+    text-align:center;
+
+    padding:12px;
+
+    background:#ff85c1;
+
+    color:white;
+
+    text-decoration:none;
+
+    border-radius:12px;
+
+    transition:0.2s;
+
+    width:100%;
+}
+
+.add-btn:hover{
+
+    background:#ff4fa3;
+}
+
+/* SEARCH */
+.search-form{
+
+    display:flex;
+
+    align-items:center;
+
+    background:#fff0f7;
+
+    border-radius:30px;
+
+    overflow:hidden;
+
+    margin-right:15px;
+}
+
+.search-form input{
+
+    border:none;
+
+    outline:none;
+
+    padding:10px 15px;
+
+    width:220px;
+
+    background:transparent;
+}
+
+.search-form button{
+
+    border:none;
+
+    background:none;
+
+    padding:0 15px;
+
+    cursor:pointer;
+
+    color:#ff4fa3;
+
+    font-size:16px;
+}
+
 </style>
+
 </head>
 
 <body>
 
+<!-- TOP -->
+<div class="top-bar">
+    FREESHIP TOÀN QUỐC - GIẢM 50% CHO ĐƠN ĐẦU TIÊN
+</div>
 
+<!-- HEADER -->
 <div class="header">
 
     <!-- LOGO -->
@@ -254,17 +459,23 @@ if (isset($_SESSION['cart'])) {
         HAN STORE
     </div>
 
-    <!-- SEARCH -->
-    <form class="search-box"
-      action="../controllers/HomeController.php"
-      method="GET">
+    <!-- MENU -->
+    <div class="menu">
+
+        <a href="index.php">TRANG CHỦ</a>
+        <a href="#">SẢN PHẨM</a>
+        <a href="#">KHUYẾN MÃI</a>
+        <a href="#">BỘ SƯU TẬP</a>
+        <a href="#">LIÊN HỆ</a>
+
+    </div>
+
+    <form action="index.php" method="GET" class="search-form">
 
         <input type="text"
             name="keyword"
-            placeholder="Tìm sản phẩm...">
-
-        <!-- THÊM BOX GỢI Ý -->
-        <div id="suggest-box"></div>
+            placeholder="Tìm sản phẩm..."
+            value="<?php echo $keyword; ?>">
 
         <button type="submit">
             <i class="fa-solid fa-magnifying-glass"></i>
@@ -272,13 +483,28 @@ if (isset($_SESSION['cart'])) {
 
     </form>
 
-    <!-- RIGHT ICON -->
+    <!-- ICON -->
     <div class="header-icons">
 
-        <!-- CART -->
-        <a href="../views/cart.php" class="icon-box">
+        <!-- ACCOUNT -->
+        <?php if (isset($_SESSION['user'])) { ?>
 
-            <i class="fa-solid fa-cart-shopping"></i>
+            <a href="profile.php" class="icon-box">
+                <i class="fa-regular fa-user"></i>
+            </a>
+
+        <?php } else { ?>
+
+            <a href="login.php" class="icon-box">
+                <i class="fa-regular fa-user"></i>
+            </a>
+
+        <?php } ?>
+
+        <!-- CART -->
+        <a href="cart.php" class="icon-box">
+
+            <i class="fa-solid fa-bag-shopping"></i>
 
             <?php if ($count > 0) { ?>
 
@@ -290,92 +516,74 @@ if (isset($_SESSION['cart'])) {
 
         </a>
 
-        <!-- NOTIFICATION -->
-        <a href="#" class="icon-box">
-            <i class="fa-regular fa-bell"></i>
-        </a>
+    </div>
 
-        <!-- ACCOUNT -->
-        <a href="profile.php" class="icon-box">
-            <i class="fa-regular fa-user"></i>
+</div>
+
+<!-- BANNER -->
+<div class="banner">
+
+    <div class="banner-content">
+
+        <h1>Summer Pink</h1>
+
+        <p>
+            Bộ sưu tập mới tone trắng hồng cực xinh
+        </p>
+
+        <a href="#" class="banner-btn">
+            Mua ngay
         </a>
 
     </div>
 
 </div>
 
+<!-- TITLE -->
+<h2 class="section-title">
+    Sản phẩm nổi bật
+</h2>
+
+<!-- PRODUCTS -->
 <div class="product-list">
 
 <?php foreach ($products as $p) { ?>
 
-    <div class="product-card"
-         onclick="goDetail(<?php echo $p['id']; ?>)">
+    <div class="product-card">
 
-        <img src="https://via.placeholder.com/150">
+        <!-- CLICK VÀO ẢNH + TÊN -->
+        <a href="product_detail.php?id=<?php echo $p['id']; ?>"
+        class="product-link">
 
-        <h3><?php echo $p['name']; ?></h3>
+            <img src="https://picsum.photos/400/500">
 
-        <p><?php echo number_format($p['price']); ?> VND</p>
+            <div class="product-info">
 
-        <!-- NÚT GIỎ HÀNG GIỮ NGUYÊN -->
-        <a href="../controllers/CartController.php?action=add&id=<?php echo $p['id']; ?>"
-           onclick="event.stopPropagation()">
+                <h3>
+                    <?php echo $p['name']; ?>
+                </h3>
+
+                <div class="price">
+                    <?php echo number_format($p['price']); ?>đ
+                </div>
+
+            </div>
+
+        </a>
+
+        <!-- NÚT GIỎ HÀNG -->
+        <a class="add-btn"
+        href="../controllers/CartController.php?action=add&id=<?php echo $p['id']; ?>&redirect=index">
+
             Thêm vào giỏ
+
         </a>
 
     </div>
 
 <?php } ?>
+
 </div>
 
-    <script>
-        let input = document.querySelector("input[name='keyword']");
-        let box = document.getElementById("suggest-box");
-
-        input.addEventListener("keyup", function(e){
-
-            let keyword = this.value;
-
-            if(keyword.length == 0){
-                box.innerHTML = "";
-                return;
-            }
-
-            fetch("../controllers/SuggestController.php?keyword=" + keyword)
-            .then(res => res.json())
-            .then(data => {
-
-                let html = "";
-
-                data.forEach(item => {
-                    html += `<div class="suggest-item"
-                                onclick="selectItem(`${item.name}`)">
-                                ${item.name}
-                            </div>`;
-                });
-
-                box.innerHTML = html;
-            });
-        });
-
-        // click gợi ý
-        function selectItem(name){
-            input.value = name;
-            box.innerHTML = "";
-        }
-
-        // ENTER để search
-        input.addEventListener("keypress", function(e){
-            if(e.key === "Enter"){
-                box.innerHTML = "";
-            }
-        });
-    </script>
-
-    <script>
-        function goDetail(id){
-            window.location.href = "/DATN_Code/views/product_detail.php?id=" + id;
-        }
-    </script>
 </body>
 </html>
