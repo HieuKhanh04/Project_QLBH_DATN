@@ -233,9 +233,9 @@ $total = 0;
     <!-- TOTAL -->
     <div class="total-box">
         Tổng tiền: <span id="total">0</span> VND <br>
-        <a href="checkout.php" class="checkout-btn" onclick="return goCheckout()">
+        <button class="checkout-btn" onclick="goCheckout()">
             Thanh toán
-        </a>
+        </button>
     </div>
 
     <script>
@@ -296,28 +296,30 @@ $total = 0;
     </script>
 
     <script>
+
         function goCheckout() {
-            let checked = document.querySelectorAll(".item-check:checked");
+
+            let checked =
+                document.querySelectorAll(".item-check:checked");
 
             if (checked.length === 0) {
+
                 alert("Vui lòng chọn sản phẩm!");
-                return false;
+                return;
             }
 
-            let items = [];
+            let ids = [];
 
             checked.forEach(cb => {
-                items.push({
-                    id: cb.dataset.id,
-                    price: cb.dataset.price,
-                    qty: cb.dataset.qty
-                });
+                ids.push(cb.dataset.id);
             });
 
-            sessionStorage.setItem("checkout_items", JSON.stringify(items));
+            // chuyển sang checkout
+            window.location.href =
+                "checkout.php?ids=" + ids.join(",");
 
-            return true;
         }
+
     </script>
 
 </body>

@@ -56,7 +56,17 @@ if (isset($_GET['ajax'])) {
 if ($redirect == 'cart') {
     header('Location: ../views/cart.php');
 } elseif ($redirect == 'detail') {
-    header('Location: ../views/product_detail.php?id='.$_GET['id_product']);
+    header(
+        'Location: ../views/product_detail.php?id='
+        .$_GET['id_product']
+    );
+} elseif ($redirect == 'checkout') {
+    $ids = $_GET['ids'] ?? '';
+
+    header(
+        'Location: ../views/checkout.php?ids='
+        .$ids
+    );
 } else {
     header('Location: ../views/index.php');
 }

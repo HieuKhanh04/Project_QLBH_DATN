@@ -466,7 +466,7 @@ body{
         <a href="#">SẢN PHẨM</a>
         <a href="#">KHUYẾN MÃI</a>
         <a href="#">BỘ SƯU TẬP</a>
-        <a href="#">LIÊN HỆ</a>
+        <a href="contact.php">LIÊN HỆ</a>
 
     </div>
 

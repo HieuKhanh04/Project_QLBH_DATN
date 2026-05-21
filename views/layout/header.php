@@ -199,7 +199,9 @@ rel="stylesheet">
 
         <a href="#">KHUYẾN MÃI</a>
 
-        <a href="#">LIÊN HỆ</a>
+        <a href="#">BỘ SƯU TẬP</a>
+
+        <a href="contact.php">LIÊN HỆ</a>
 
     </div>
 
