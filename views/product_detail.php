@@ -180,7 +180,7 @@ body{
         </div>
 
         <a class="add-btn"
-            href="../controllers/CartController.php?action=add&id=<?php echo $product['id']; ?>&redirect=detail&id_product=<?php echo $product['id']; ?>">
+            href="../controllers/CartController.php?action=add&id=<?php echo $product['product_id']; ?>&redirect=detail&id_product=<?php echo $product['product_id']; ?>">
 
                 Thêm vào giỏ
 

@@ -7,6 +7,9 @@ if (isset($_SESSION['cart'])) {
 }
 
 ?>
+<?php
+$current = basename($_SERVER['PHP_SELF']);
+?>
 
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -16,168 +19,210 @@ rel="stylesheet">
 
 <style>
 
-.top-bar{
+    .top-bar{
 
-    background:#ff85c1;
+        background:#ff85c1;
 
-    color:white;
+        color:white;
 
-    text-align:center;
+        text-align:center;
 
-    padding:10px;
+        padding:10px;
 
-    font-size:14px;
-}
+        font-size:14px;
+    }
 
-.header{
+    .header{
 
-    background:white;
+        background:white;
 
-    height:90px;
+        height:90px;
 
-    display:flex;
+        display:flex;
 
-    align-items:center;
+        align-items:center;
 
-    justify-content:space-between;
+        justify-content:space-between;
 
-    padding:0 50px;
+        padding:0 50px;
 
-    box-shadow:0 2px 10px rgba(0,0,0,0.05);
+        box-shadow:0 2px 10px rgba(0,0,0,0.05);
 
-    position:sticky;
+        position:sticky;
 
-    top:0;
+        top:0;
 
-    z-index:1000;
-}
+        z-index:1000;
+    }
 
-.logo{
+    .logo{
 
-    font-size:34px;
+        font-size:34px;
 
-    color:#ff4fa3;
+        color:#ff4fa3;
 
-    font-family:'Pacifico', cursive;
-}
+        font-family:'Pacifico', cursive;
+    }
 
-.menu{
+    .menu{
 
-    display:flex;
+        display:flex;
 
-    gap:35px;
-}
+        gap:35px;
+    }
 
-.menu a{
+    .menu a{
 
-    text-decoration:none;
+        text-decoration:none;
 
-    color:#333;
+        color:#333;
 
-    font-size:16px;
+        font-size:16px;
 
-    font-weight:bold;
-}
+        font-weight:bold;
+    }
 
-.menu a:hover{
-    color:#ff4fa3;
-}
+    .menu a:hover{
+        color:#ff4fa3;
+    }
 
-.search-form{
+    .search-form{
 
-    display:flex;
+        display:flex;
 
-    align-items:center;
+        align-items:center;
 
-    background:#fff0f7;
+        background:#fff0f7;
 
-    border-radius:30px;
+        border-radius:30px;
 
-    overflow:hidden;
-}
+        overflow:hidden;
+    }
 
-.search-form input{
+    .search-form input{
 
-    border:none;
+        border:none;
 
-    outline:none;
+        outline:none;
 
-    padding:10px 15px;
+        padding:10px 15px;
 
-    width:220px;
+        width:220px;
 
-    background:transparent;
-}
+        background:transparent;
+    }
 
-.search-form button{
+    .search-form button{
 
-    border:none;
+        border:none;
 
-    background:none;
+        background:none;
 
-    padding:0 15px;
+        padding:0 15px;
 
-    cursor:pointer;
+        cursor:pointer;
 
-    color:#ff4fa3;
-}
+        color:#ff4fa3;
+    }
 
-.header-icons{
+    .header-icons{
 
-    display:flex;
+        display:flex;
 
-    gap:15px;
-}
+        gap:15px;
+    }
 
-.icon-box{
+    .icon-box{
 
-    width:45px;
-    height:45px;
+        width:45px;
+        height:45px;
 
-    border-radius:50%;
+        border-radius:50%;
 
-    background:#fff0f7;
+        background:#fff0f7;
 
-    display:flex;
+        display:flex;
 
-    align-items:center;
-    justify-content:center;
+        align-items:center;
+        justify-content:center;
 
-    text-decoration:none;
+        text-decoration:none;
 
-    position:relative;
-}
+        position:relative;
+    }
 
-.icon-box i{
+    .icon-box i{
 
-    color:#ff4fa3;
+        color:#ff4fa3;
 
-    font-size:18px;
-}
+        font-size:18px;
+    }
 
-.cart-count{
+    .cart-count{
 
-    position:absolute;
+        position:absolute;
 
-    top:-5px;
-    right:-5px;
+        top:-5px;
+        right:-5px;
 
-    background:red;
+        background:red;
 
-    color:white;
+        color:white;
 
-    min-width:18px;
-    height:18px;
+        min-width:18px;
+        height:18px;
 
-    border-radius:50%;
+        border-radius:50%;
 
-    display:flex;
+        display:flex;
 
-    align-items:center;
-    justify-content:center;
+        align-items:center;
+        justify-content:center;
 
-    font-size:11px;
-}
+        font-size:11px;
+    }
+
+    .logo{
+        text-decoration:none;
+        font-weight: normal;
+    }
+
+    .menu a.active{
+        color:#ff4fa3;
+        border-bottom:2px solid #ff4fa3;
+        padding-bottom:5px;
+    }
+
+    .menu a{
+        text-decoration:none;
+        color:#333;
+        font-size:16px;
+        font-weight:bold;
+        position:relative;
+        transition:0.2s;
+    }
+
+    /* hover */
+    .menu a:hover{
+        color:#ff4fa3;
+    }
+
+    /* ACTIVE */
+    .menu a.active-menu{
+        color:#ff4fa3;
+    }
+
+    /* gạch chân animation */
+    .menu a.active-menu::after{
+        content:"";
+        position:absolute;
+        left:0;
+        bottom:-5px;
+        width:100%;
+        height:2px;
+        background:#ff4fa3;
+        border-radius:2px;
+    }
 
 </style>
 
@@ -187,22 +232,21 @@ rel="stylesheet">
 
 <div class="header">
 
-    <div class="logo">
+    <a href="index.php" class="logo">
         HAN STORE
-    </div>
+    </a>
 
     <div class="menu">
-
-        <a href="index.php">TRANG CHỦ</a>
-
-        <a href="#">SẢN PHẨM</a>
-
-        <a href="#">KHUYẾN MÃI</a>
-
-        <a href="#">BỘ SƯU TẬP</a>
-
-        <a href="contact.php">LIÊN HỆ</a>
-
+        <a href="index.php" class="<?php echo $current == 'index.php' ? 'active' : ''; ?>">TRANG CHỦ</a>
+        <a href="products.php"
+            class="<?php echo ($current == 'products.php') ? 'active-menu' : ''; ?>">
+            SẢN PHẨM
+            </a>
+        <a href="promotion.php" class="<?php echo $current == 'promotion.php' ? 'active' : ''; ?>">
+            KHUYẾN MÃI
+        </a>
+        <a href="#" class="<?php echo $current == 'collection.php' ? 'active' : ''; ?>">BỘ SƯU TẬP</a>
+        <a href="contact.php" class="<?php echo $current == 'contact.php' ? 'active' : ''; ?>">LIÊN HỆ</a>
     </div>
 
     <form action="index.php"

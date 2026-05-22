@@ -17,8 +17,10 @@ if (!empty($keyword)) {
 
 $count = 0;
 
-if (isset($_SESSION['cart'])) {
-    $count = array_sum($_SESSION['cart']);
+if (!empty($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+    foreach ($_SESSION['cart'] as $qty) {
+        $count += (int) $qty;
+    }
 }
 ?>
 
@@ -440,109 +442,30 @@ body{
     font-size:16px;
 }
 
+.logo{
+    text-decoration:none;
+}
+
 </style>
 
 </head>
 
 <body>
 
-<!-- TOP -->
-<div class="top-bar">
-    FREESHIP TOÀN QUỐC - GIẢM 50% CHO ĐƠN ĐẦU TIÊN
-</div>
-
 <!-- HEADER -->
-<div class="header">
-
-    <!-- LOGO -->
-    <div class="logo">
-        HAN STORE
-    </div>
-
-    <!-- MENU -->
-    <div class="menu">
-
-        <a href="index.php">TRANG CHỦ</a>
-        <a href="#">SẢN PHẨM</a>
-        <a href="#">KHUYẾN MÃI</a>
-        <a href="#">BỘ SƯU TẬP</a>
-        <a href="contact.php">LIÊN HỆ</a>
-
-    </div>
-
-    <form action="index.php" method="GET" class="search-form">
-
-        <input type="text"
-            name="keyword"
-            placeholder="Tìm sản phẩm..."
-            value="<?php echo $keyword; ?>">
-
-        <button type="submit">
-            <i class="fa-solid fa-magnifying-glass"></i>
-        </button>
-
-    </form>
-
-    <!-- ICON -->
-    <div class="header-icons">
-
-        <!-- ACCOUNT -->
-        <?php if (isset($_SESSION['user'])) { ?>
-
-            <a href="profile.php" class="icon-box">
-                <i class="fa-regular fa-user"></i>
-            </a>
-
-        <?php } else { ?>
-
-            <a href="login.php" class="icon-box">
-                <i class="fa-regular fa-user"></i>
-            </a>
-
-        <?php } ?>
-
-        <!-- CART -->
-        <a href="cart.php" class="icon-box">
-
-            <i class="fa-solid fa-bag-shopping"></i>
-
-            <?php if ($count > 0) { ?>
-
-                <span class="cart-count">
-                    <?php echo $count; ?>
-                </span>
-
-            <?php } ?>
-
-        </a>
-
-    </div>
-
-</div>
+<?php include 'layout/header.php'; ?>
 
 <!-- BANNER -->
 <div class="banner">
-
     <div class="banner-content">
-
         <h1>Summer Pink</h1>
-
-        <p>
-            Bộ sưu tập mới tone trắng hồng cực xinh
-        </p>
-
-        <a href="#" class="banner-btn">
-            Mua ngay
-        </a>
-
+        <p>Bộ sưu tập mới tone trắng hồng cực xinh</p>
+        <a href="#" class="banner-btn">Mua ngay</a>
     </div>
-
 </div>
 
 <!-- TITLE -->
-<h2 class="section-title">
-    Sản phẩm nổi bật
-</h2>
+<h2 class="section-title">Sản phẩm nổi bật</h2>
 
 <!-- PRODUCTS -->
 <div class="product-list">
@@ -551,17 +474,23 @@ body{
 
     <div class="product-card">
 
-        <!-- CLICK VÀO ẢNH + TÊN -->
-        <a href="product_detail.php?id=<?php echo $p['id']; ?>"
-        class="product-link">
+        <!-- DETAIL -->
+        <a href="product_detail.php?id=<?php echo $p['product_id']; ?>"
+           class="product-link">
 
             <img src="https://picsum.photos/400/500">
 
             <div class="product-info">
 
-                <h3>
-                    <?php echo $p['name']; ?>
-                </h3>
+                <h3><?php echo htmlspecialchars($p['name']); ?></h3>
+
+                <p style="color:#666;font-size:14px;">
+                    Size: <?php echo $p['size'] ?? 'Free size'; ?>
+                </p>
+
+                <p style="color:#666;font-size:14px;">
+                    Màu: <?php echo $p['color'] ?? 'Nhiều màu'; ?>
+                </p>
 
                 <div class="price">
                     <?php echo number_format($p['price']); ?>đ
@@ -571,12 +500,11 @@ body{
 
         </a>
 
-        <!-- NÚT GIỎ HÀNG -->
+        <!-- ADD CART -->
         <a class="add-btn"
-        href="../controllers/CartController.php?action=add&id=<?php echo $p['id']; ?>&redirect=index">
+           href="../controllers/CartController.php?action=add&id=<?php echo $p['product_id']; ?>&redirect=index">
 
             Thêm vào giỏ
-
         </a>
 
     </div>

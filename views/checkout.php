@@ -657,11 +657,11 @@ body{
                 <div class="product-info">
 
                     <div class="product-name">
-                        <?php echo $product['name']; ?>
+                        <?php echo htmlspecialchars($product['name'] ?? ''); ?>
                     </div>
 
                     <div class="product-color">
-                        light grey / L
+                        <?php echo $product['color'] ?? '---'; ?> / <?php echo $product['size'] ?? '---'; ?>
                     </div>
 
                     <div class="qty-box">
@@ -742,15 +742,22 @@ body{
 
         </div>
 
-        <button class="order-btn">
-            ĐẶT HÀNG
-        </button>
+        <form action="../controllers/OrderController.php" method="POST" id="checkoutForm">
+            <input type="hidden" name="name" id="nameInput">
+            <input type="hidden" name="phone" id="phoneInput">
+            <input type="hidden" name="address" id="addressInput">
 
+            <button type="submit" class="order-btn">
+                ĐẶT HÀNG
+            </button>
+        </form>
     </div>
 
 </div>
 
     <script>
+        let selectedProvinceCode = "";
+        let selectedDistrictCode = "";
         let selectedProvinceName = "";
         let selectedDistrictName = "";
         let selectedWardName = "";
@@ -765,20 +772,13 @@ body{
 
         /* RENDER PROVINCE */
         function renderProvince(data){
-
-            let list =
-                document.getElementById("addressList");
-
+            let list = document.getElementById("addressList");
             list.innerHTML = "";
-
             data.forEach(item => {
-
                 list.innerHTML += `
                     <div class="address-item"
-                        onclick="selectProvince(${item.code})">
-
+                        onclick="selectProvince(${item.code}, '${item.name}')">
                         ${item.name}
-
                     </div>
                 `;
             });
@@ -786,56 +786,28 @@ body{
 
         /* SELECT PROVINCE */
         function selectProvince(code, name){
-
             selectedProvinceCode = code;
             selectedProvinceName = name;
-
-
             document.getElementById("districtTab")
                 .classList.add("active");
 
             fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`)
                 .then(res => res.json())
                 .then(data => {
-
                     renderDistrict(data.districts);
                 });
         }
 
-        /* RENDER DISTRICT */
-        function renderProvince(data){
-
-            let list =
-                document.getElementById("addressList");
-
-            list.innerHTML = "";
-
-            data.forEach(item => {
-
-                list.innerHTML += `
-                    <div class="address-item"
-                        onclick="selectProvince(${item.code}, '${item.name}')">
-
-                        ${item.name}
-
-                    </div>
-                `;
-            });
-        }
-
         /* SELECT DISTRICT */
         function selectDistrict(code, name){
-
             selectedDistrictCode = code;
             selectedDistrictName = name;
-
             document.getElementById("wardTab")
                 .classList.add("active");
 
             fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`)
                 .then(res => res.json())
                 .then(data => {
-
                     renderWard(data.wards);
                 });
         }
@@ -1067,9 +1039,7 @@ body{
         document.querySelectorAll(".product-price")
             .forEach(item => {
 
-                let text =
-                    item.innerText
-                        .replace(/[₫,.]/g, "");
+                let text = item.innerText.replace(/[^0-9]/g, "");
 
                 productTotal += parseInt(text);
             });
@@ -1092,6 +1062,16 @@ body{
                 (productTotal + ship).toLocaleString() + "₫";
     }
 
+        document.getElementById("checkoutForm").addEventListener("submit", function () {
+
+            const name = document.getElementById("name")?.value || "";
+            const phone = document.getElementById("phone")?.value || "";
+            const address = document.getElementById("addressDetail")?.value || "";
+
+            document.getElementById("nameInput").value = name;
+            document.getElementById("phoneInput").value = phone;
+            document.getElementById("addressInput").value = address;
+        });
     </script>
 </body>
 </html>
