@@ -299,151 +299,76 @@ body{
 
 /* CARD */
 .product-card{
-
     background:white;
-
-    border-radius:20px;
-
+    border-radius:18px;
     overflow:hidden;
-
     box-shadow:0 4px 15px rgba(0,0,0,0.08);
-
-    transition:0.25s;
-
-    display:flex;
-
-    flex-direction:column;
 }
 
+/* link detail không gạch chân */
 .product-link{
-
     text-decoration:none;
-
     color:inherit;
-
     display:block;
 }
 
-.product-card:hover{
-
-    transform:translateY(-8px);
-}
-
-/* IMAGE */
-.product-card img{
-
-    width:100%;
-
-    height:320px;
-
-    object-fit:cover;
-}
-
-/* INFO */
+/* info */
 .product-info{
-
-    padding:18px;
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:12px;
+    padding:15px;
 }
 
-.product-info h3{
-
-    font-size:18px;
-
-    margin-bottom:12px;
-
-    color:#333;
+.sub-info{
+    color:#666;
+    font-size:14px;
 }
 
 .price{
-
     color:#ff4fa3;
-
-    font-size:22px;
-
     font-weight:bold;
-
-    margin-bottom:15px;
+    font-size:18px;
+    margin-top:10px;
 }
 
-/* BUTTON */
-.add-btn{
+/* ===== BUTTON AREA ===== */
+.btn-group{
+    display:flex;
+    gap:10px;
+    padding:12px 15px 15px;
+}
 
-    display:block;
-
+/* CHUNG 2 NÚT */
+.add-btn,
+.buy-now-btn{
+    flex:1;
     text-align:center;
-
-    padding:12px;
-
-    background:#ff85c1;
-
-    color:white;
-
+    padding:10px 0;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:bold;
     text-decoration:none;
-
-    border-radius:12px;
-
     transition:0.2s;
+}
 
-    width:100%;
+/* THÊM VÀO GIỎ */
+.add-btn{
+    background:#ff85c1;
+    color:white !important;
 }
 
 .add-btn:hover{
-
     background:#ff4fa3;
 }
 
-/* SEARCH */
-.search-form{
-
-    display:flex;
-
-    align-items:center;
-
-    background:#fff0f7;
-
-    border-radius:30px;
-
-    overflow:hidden;
-
-    margin-right:15px;
-}
-
-.search-form input{
-
-    border:none;
-
-    outline:none;
-
-    padding:10px 15px;
-
-    width:220px;
-
-    background:transparent;
-}
-
-.search-form button{
-
-    border:none;
-
-    background:none;
-
-    padding:0 15px;
-
-    cursor:pointer;
-
+/* MUA NGAY */
+.buy-now-btn{
+    background:white;
+    border:2px solid #ff4fa3;
     color:#ff4fa3;
-
-    font-size:16px;
 }
 
-.logo{
-    text-decoration:none;
+.buy-now-btn:hover{
+    background:#ff4fa3;
+    color:white;
 }
 
 </style>
@@ -474,9 +399,8 @@ body{
 
     <div class="product-card">
 
-        <!-- DETAIL -->
-        <a href="product_detail.php?id=<?php echo $p['product_id']; ?>"
-           class="product-link">
+        <!-- LINK DETAIL -->
+        <a href="product_detail.php?id=<?php echo $p['product_id']; ?>" class="product-link">
 
             <img src="https://picsum.photos/400/500">
 
@@ -484,11 +408,11 @@ body{
 
                 <h3><?php echo htmlspecialchars($p['name']); ?></h3>
 
-                <p style="color:#666;font-size:14px;">
+                <p class="sub-info">
                     Size: <?php echo $p['size'] ?? 'Free size'; ?>
                 </p>
 
-                <p style="color:#666;font-size:14px;">
+                <p class="sub-info">
                     Màu: <?php echo $p['color'] ?? 'Nhiều màu'; ?>
                 </p>
 
@@ -500,12 +424,20 @@ body{
 
         </a>
 
-        <!-- ADD CART -->
-        <a class="add-btn"
-           href="../controllers/CartController.php?action=add&id=<?php echo $p['product_id']; ?>&redirect=index">
+        <!-- BUTTON GROUP -->
+        <div class="btn-group">
 
-            Thêm vào giỏ
-        </a>
+            <a class="add-btn"
+               href="../controllers/CartController.php?action=add&id=<?php echo $p['product_id']; ?>&redirect=products">
+                Thêm vào giỏ
+            </a>
+
+            <a class="buy-now-btn"
+               href="../views/checkout.php?ids=<?php echo $p['product_id']; ?>">
+                Mua ngay
+            </a>
+
+        </div>
 
     </div>
 
@@ -513,5 +445,6 @@ body{
 
 </div>
 
+<?php include 'layout/footer.php'; ?>
 </body>
 </html>

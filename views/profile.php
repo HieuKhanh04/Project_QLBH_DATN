@@ -1,5 +1,4 @@
 <?php
-
 session_start();
 
 if (!isset($_SESSION['user'])) {
@@ -8,15 +7,14 @@ if (!isset($_SESSION['user'])) {
 }
 
 $user = $_SESSION['user'];
-
 ?>
 
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-
 <meta charset="UTF-8">
 
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -24,214 +22,125 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 
 <style>
 
-body{
-    margin:0;
-    font-family:Arial;
-    background:#fff5f9;
+/* RESET */
+* {
+    box-sizing: border-box;
 }
 
-/* HEADER */
-.header{
-
-    background:#ff85c1;
-    color:white;
-    padding:18px 30px;
-    font-size:28px;
-    font-weight:bold;
-    display:flex;
-    align-items:center;
-    gap:12px;
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #fff5f9;
 }
 
-/* CONTAINER */
-.profile-container{
-
-    width:1100px;
-
-    margin:30px auto;
-
-    display:flex;
-
-    gap:25px;
+/* PAGE CONTAINER */
+.profile-container {
+    width: 1100px;
+    margin: 30px auto;
+    display: flex;
+    gap: 25px;
 }
 
 /* SIDEBAR */
-.sidebar{
-
-    width:250px;
-
-    background:white;
-
-    border-radius:15px;
-
-    padding:20px;
-
-    box-shadow:0 4px 10px rgba(0,0,0,0.08);
+.sidebar {
+    width: 250px;
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
 
-/* USER */
-.user-box{
-
-    text-align:center;
-
-    margin-bottom:25px;
+/* USER INFO */
+.user-box {
+    text-align: center;
+    margin-bottom: 25px;
 }
 
-.avatar{
-
-    width:80px;
-    height:80px;
-
-    border-radius:50%;
-
-    background:#ff85c1;
-
-    margin:auto;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    color:white;
-
-    font-size:35px;
+.avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #ff85c1;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 35px;
 }
 
-.user-name{
-
-    margin-top:10px;
-
-    font-size:18px;
-
-    font-weight:bold;
+.user-name {
+    margin-top: 10px;
+    font-size: 18px;
+    font-weight: bold;
 }
 
-/* MENU */
-.menu{
-
-    display:flex;
-    flex-direction:column;
-
-    gap:10px;
+/* SIDEBAR MENU (ĐÃ SỬA KHÔNG ĐỤNG HEADER) */
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.menu a{
-
-    padding:12px;
-
-    border-radius:10px;
-
-    text-decoration:none;
-
-    color:#444;
-
-    transition:0.2s;
+.sidebar-menu a {
+    padding: 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #444;
+    transition: 0.2s;
 }
 
-.menu a:hover{
-
-    background:#ffe3f1;
-
-    color:#ff4fa3;
+.sidebar-menu a:hover {
+    background: #ffe3f1;
+    color: #ff4fa3;
 }
 
 /* CONTENT */
-.content{
-
-    flex:1;
-
-    background:white;
-
-    border-radius:15px;
-
-    padding:30px;
-
-    box-shadow:0 4px 10px rgba(0,0,0,0.08);
+.content {
+    flex: 1;
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
 
-/* TITLE */
-.content h2{
+.content h2 {
+    margin-top: 0;
+    color: #ff4fa3;
+}
 
-    margin-top:0;
+.info p {
+    font-size: 17px;
+    margin: 15px 0;
+}
 
+/* PAGE HEADER TITLE */
+.profile-page-header {
+    width: 100%;
+    background: white;
+    padding: 20px 50px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+.header-title{
+    font-family: 'Great Vibes', cursive;
+    font-size: 34px;
+    font-weight: normal;
     color:#ff4fa3;
 }
-
-/* INFO */
-.info{
-
-    margin-top:20px;
-}
-
-.info p{
-
-    font-size:17px;
-
-    margin:15px 0;
-}
-
-/* BUTTON */
-.logout-btn{
-
-    display:inline-block;
-
-    margin-top:25px;
-
-    padding:12px 20px;
-
-    background:#ff4fa3;
-
-    color:white;
-
-    border-radius:10px;
-
-    text-decoration:none;
-}
-
-.logout-btn:hover{
-
-    background:#e63d8d;
-}
-
-/* ICON TRANG CHỦ */
-.home-icon {
-    color:white;
-    font-size:20px;
-
-    width:40px;
-    height:40px;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    border-radius:50%;
-    text-decoration:none;
-
-    transition:0.2s;
-}
-
-.home-icon:hover {
-    background:rgba(255,255,255,0.2);
-}
-
 
 </style>
 </head>
 
 <body>
-    
 
-<div class="header">
+<?php include 'layout/header.php'; ?>
 
-    <a href="index.php" class="home-icon">
-        <i class="fa-solid fa-house"></i>
-    </a>
-
-    <div class="header-title">
-        Tài khoản của tôi
-    </div>
-
+<div class="profile-page-header">
+        <div class="header-title">
+            Tài khoản của tôi
+        </div>
 </div>
 
 <div class="profile-container">
@@ -240,7 +149,6 @@ body{
     <div class="sidebar">
 
         <div class="user-box">
-
             <div class="avatar">
                 <i class="fa-solid fa-user"></i>
             </div>
@@ -248,11 +156,10 @@ body{
             <div class="user-name">
                 <?php echo $user['name']; ?>
             </div>
-
         </div>
 
         <!-- MENU -->
-        <div class="menu">
+        <div class="sidebar-menu">
 
             <a href="#">
                 <i class="fa-regular fa-user"></i>
@@ -264,8 +171,8 @@ body{
                 Đơn mua
             </a>
 
-             <a href="#">
-                <i class="fa-solid fa-tags"></i> 
+            <a href="#">
+                <i class="fa-solid fa-tags"></i>
                 Voucher của tôi
             </a>
 
@@ -274,7 +181,7 @@ body{
                 Đổi mật khẩu
             </a>
 
-           <a href="logout.php">
+            <a href="logout.php">
                 <i class="fa-solid fa-right-from-bracket"></i>
                 Đăng xuất
             </a>
@@ -290,23 +197,12 @@ body{
 
         <div class="info">
 
-            <p>
-                <strong>Họ tên:</strong>
-                <?php echo $user['name']; ?>
-            </p>
-
-            <p>
-                <strong>Email:</strong>
-                <?php echo $user['email']; ?>
-            </p>
+            <p><strong>Họ tên:</strong> <?php echo $user['name']; ?></p>
+            <p><strong>Email:</strong> <?php echo $user['email']; ?></p>
 
             <p>
                 <strong>Vai trò:</strong>
-
-                <?php echo $user['role'] == 1
-                    ? 'Admin'
-                    : 'Khách hàng';
-?>
+                <?php echo ($user['role'] ?? 0) == 1 ? 'Admin' : 'Khách hàng'; ?>
             </p>
 
         </div>
@@ -314,6 +210,8 @@ body{
     </div>
 
 </div>
+
+<?php include 'layout/footer.php'; ?>
 
 </body>
 </html>

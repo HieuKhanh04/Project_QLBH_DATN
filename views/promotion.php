@@ -172,7 +172,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 
         background:
             linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)),
-            url('https://images.unsplash.com/photo-1521335629791-ce4aec67dd49?q=80&w=1600');
+            url('https://as2.ftcdn.net/jpg/02/73/39/97/1000_F_273399717_uvZO9xGTnqarTGfypRppeeJ0U1ok6nfr.jpg');
 
         background-size:cover;
         background-position:center;
@@ -212,6 +212,26 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
         background:#e63d8d;
         transform:translateY(-2px);
     }
+
+    .buy-now-btn{
+        display:block;
+        text-align:center;
+        padding:10px;
+        margin-top:8px;
+
+        background:#ff4fa3;
+        color:white;
+        text-decoration:none;
+        border-radius:12px;
+
+        font-weight:bold;
+        transition:0.2s;
+    }
+
+    .buy-now-btn:hover{
+        background:#e63d8d;
+    }
+
 </style>
 </head>
 
@@ -265,6 +285,10 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
                     Thêm vào giỏ
             </a>
 
+            <a class="buy-now-btn"
+                href="../views/checkout.php?ids=<?php echo $p['product_id']; ?>">
+                    Mua ngay
+                </a>
         </div>
 
     </div>
@@ -274,6 +298,6 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 <?php } ?>
 
 </div>
-
+<?php include 'layout/footer.php'; ?>
 </body>
 </html>

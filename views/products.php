@@ -204,6 +204,47 @@ $activeCategory = $_GET['category'] ?? 0;
             background:white;
         }
 
+        .btn-group{
+    display:flex;
+    gap:10px;
+    padding:12px 15px 15px;
+}
+
+/* CHUNG 2 NÚT */
+.add-btn,
+.buy-now-btn{
+    flex:1;
+    text-align:center;
+    padding:10px 0;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:bold;
+    text-decoration:none;
+    transition:0.2s;
+}
+
+/* THÊM VÀO GIỎ */
+.add-btn{
+    background:#ff85c1;
+    color:white !important;
+}
+
+.add-btn:hover{
+    background:#ff4fa3;
+}
+
+/* MUA NGAY */
+.buy-now-btn{
+    background:white;
+    border:2px solid #ff4fa3;
+    color:#ff4fa3;
+}
+
+.buy-now-btn:hover{
+    background:#ff4fa3;
+    color:white;
+}
+
     </style>
 </head>
 
@@ -248,35 +289,44 @@ $activeCategory = $_GET['category'] ?? 0;
 
         <div class="product-card">
 
-            <a href="product_detail.php?id=<?php echo $p['product_id']; ?>">
+        <!-- DETAIL -->
+        <a href="product_detail.php?id=<?php echo $p['product_id']; ?>" class="product-link">
 
-                <img src="https://picsum.photos/400/500">
+            <img src="https://picsum.photos/400/500">
 
-                <div class="product-info">
+            <div class="product-info">
 
-                    <div class="product-name">
-                        <?php echo htmlspecialchars($p['name']); ?>
-                    </div>
-
-                    <div class="price">
-                        <?php echo number_format($p['price']); ?>₫
-                    </div>
-
+                <div class="product-name">
+                    <?php echo htmlspecialchars($p['name']); ?>
                 </div>
 
-            </a>
+                <div class="price">
+                    <?php echo number_format($p['price']); ?>đ
+                </div>
+
+            </div>
+        </a>
+
+        <!-- BUTTON GROUP (GIỐNG INDEX) -->
+        <div class="btn-group">
 
             <a class="add-btn"
-               href="../controllers/CartController.php?action=add&id=<?php echo $p['product_id']; ?>&redirect=products">
-
+            href="../controllers/CartController.php?action=add&id=<?php echo $p['product_id']; ?>&redirect=products">
                 Thêm vào giỏ
+            </a>
+
+            <a class="buy-now-btn"
+            href="../views/checkout.php?ids=<?php echo $p['product_id']; ?>">
+                Mua ngay
             </a>
 
         </div>
 
+    </div>
+
     <?php } ?>
 
 </div>
-
+<?php include 'layout/footer.php'; ?>
 </body>
 </html>

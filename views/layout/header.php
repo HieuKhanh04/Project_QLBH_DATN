@@ -10,12 +10,12 @@ if (isset($_SESSION['cart'])) {
 <?php
 $current = basename($_SERVER['PHP_SELF']);
 ?>
-
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
-rel="stylesheet">
+<!-- <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+rel="stylesheet"> -->
 
 <style>
 
@@ -57,11 +57,12 @@ rel="stylesheet">
 
     .logo{
 
-        font-size:34px;
-
-        color:#ff4fa3;
-
-        font-family:'Pacifico', cursive;
+        font-family: 'Great Vibes', cursive;
+        font-size: 42px;
+        color: #ff4fa3;
+        font-weight: bold;
+        text-shadow: 0 2px 6px rgba(255, 79, 163, 0.3);
+        text-decoration: none;
     }
 
     .menu{
@@ -184,7 +185,7 @@ rel="stylesheet">
 
     .logo{
         text-decoration:none;
-        font-weight: normal;
+        font-weight: bold;
     }
 
     .menu a.active{
@@ -224,6 +225,63 @@ rel="stylesheet">
         border-radius:2px;
     }
 
+    .menu a.active{
+        color:#ff4fa3;
+        border-bottom:2px solid #ff4fa3;
+        padding-bottom:5px;
+    }
+
+    .notification-box{
+    position:relative;
+}
+
+    /* badge số thông báo */
+    .notif-count{
+        position:absolute;
+        top:-5px;
+        right:-5px;
+        background:red;
+        color:white;
+        font-size:11px;
+        width:18px;
+        height:18px;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+    }
+
+    /* dropdown */
+    .notif-dropdown{
+        position:absolute;
+        top:55px;
+        right:0;
+        width:260px;
+        background:white;
+        box-shadow:0 5px 20px rgba(0,0,0,0.15);
+        border-radius:12px;
+        padding:10px;
+        display:none;
+        z-index:999;
+    }
+
+    /* item */
+    .notif-item{
+        padding:10px;
+        font-size:14px;
+        border-bottom:1px solid #eee;
+        cursor:pointer;
+    }
+
+    .notif-item:hover{
+        background:#fff0f7;
+    }
+
+    /* hover mở dropdown */
+    .notification-box:hover .notif-dropdown{
+        display:block;
+    }
+
 </style>
 
 <div class="top-bar">
@@ -245,7 +303,13 @@ rel="stylesheet">
         <a href="promotion.php" class="<?php echo $current == 'promotion.php' ? 'active' : ''; ?>">
             KHUYẾN MÃI
         </a>
-        <a href="#" class="<?php echo $current == 'collection.php' ? 'active' : ''; ?>">BỘ SƯU TẬP</a>
+
+        <a href="collections.php"
+            class="<?php if ($current == 'collections.php') {
+                echo 'active';
+            } ?>">
+                BỘ SƯU TẬP
+            </a>
         <a href="contact.php" class="<?php echo $current == 'contact.php' ? 'active' : ''; ?>">LIÊN HỆ</a>
     </div>
 
@@ -264,6 +328,16 @@ rel="stylesheet">
     </form>
 
     <div class="header-icons">
+
+        <a href="#" class="icon-box notification-box">
+        <i class="fa-regular fa-bell"></i>
+        <span class="notif-count">3</span>
+        <div class="notif-dropdown">
+            <div class="notif-item">🎉 Giảm giá 50% toàn shop</div>
+            <div class="notif-item">🚚 Freeship đơn từ 300k</div>
+            <div class="notif-item">🆕 Sản phẩm mới đã cập nhật</div>
+        </div>
+    </a>
 
         <a href="profile.php" class="icon-box">
             <i class="fa-regular fa-user"></i>

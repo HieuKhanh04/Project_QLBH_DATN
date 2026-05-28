@@ -1073,5 +1073,7 @@ body{
             document.getElementById("addressInput").value = address;
         });
     </script>
+
+    <?php include 'layout/footer.php'; ?>
 </body>
 </html>

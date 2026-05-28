@@ -263,6 +263,6 @@ function goCheckout() {
     window.location.href = "checkout.php?ids=" + ids.join(",");
 }
 </script>
-
+<?php include 'layout/footer.php'; ?>
 </body>
 </html>

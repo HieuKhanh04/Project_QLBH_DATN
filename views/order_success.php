@@ -124,6 +124,6 @@ h1{
     <a class="btn" href="index.php">Tiếp tục mua sắm</a>
 
 </div>
-
+<?php include 'layout/footer.php'; ?>
 </body>
 </html>
