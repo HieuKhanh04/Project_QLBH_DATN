@@ -1,13 +1,19 @@
 <?php
 require_once '../../config/database.php';
 
-/* LẤY ĐƠN HÀNG */
+/* LẤY KHÁCH HÀNG (từ orders - vì bạn chưa có bảng users) */
 $stmt = $conn->query('
-    SELECT *
+    SELECT 
+        receiver_name,
+        receiver_phone,
+        COUNT(order_id) AS total_orders,
+        SUM(total_price) AS total_spent,
+        MAX(created_at) AS last_order
     FROM orders
-    ORDER BY order_id DESC
+    GROUP BY receiver_phone, receiver_name
+    ORDER BY last_order DESC
 ');
-$orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -15,7 +21,7 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <head>
 <meta charset="UTF-8">
-<title>Quản lý đơn hàng</title>
+<title>Quản lý khách hàng</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 <link rel="stylesheet"
@@ -23,7 +29,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 
 <style>
 
-/* ================= RESET ================= */
+/* RESET */
 *{
     margin:0;
     padding:0;
@@ -35,12 +41,12 @@ body{
     background:#fff5f9;
 }
 
-/* ================= LAYOUT ================= */
+/* LAYOUT */
 .admin-container{
     display:flex;
 }
 
-/* ================= SIDEBAR (GIỮ NGUYÊN 100% PRODUCTS) ================= */
+/* SIDEBAR (GIỮ NGUYÊN STYLE PRODUCTS) */
 .sidebar{
     width:260px;
     background:white;
@@ -84,7 +90,6 @@ body{
     text-decoration:none;
     color:#333;
     margin-bottom:10px;
-    transition:0.2s;
 }
 
 .menu a:hover{
@@ -109,7 +114,7 @@ body{
     margin-top:15px;
 }
 
-/* ================= CONTENT ================= */
+/* CONTENT */
 .main-content{
     flex:1;
     margin-left:260px;
@@ -143,17 +148,26 @@ body{
     border-radius:50%;
 }
 
+/* SEARCH */
+.search-box{
+    margin-bottom:20px;
+    display:flex;
+    gap:10px;
+}
+
+.search-box input{
+    width:300px;
+    padding:10px 14px;
+    border:1px solid #ddd;
+    border-radius:12px;
+}
+
 /* TABLE */
 .table-box{
     background:white;
     border-radius:22px;
     padding:25px;
     box-shadow:0 4px 12px rgba(0,0,0,0.05);
-}
-
-.chart-title{
-    font-size:24px;
-    margin-bottom:20px;
 }
 
 table{
@@ -172,18 +186,13 @@ table td{
     border-top:1px solid #f3f3f3;
 }
 
-/* STATUS */
-.status{
-    padding:8px 14px;
-    border-radius:30px;
+.badge{
+    padding:6px 12px;
+    border-radius:20px;
+    background:#e7f1ff;
+    color:#2196f3;
     font-size:13px;
-    font-weight:bold;
 }
-
-.processing{ background:#fff0d9; color:#ff9800; }
-.shipping{ background:#e7f1ff; color:#2196f3; }
-.success{ background:#e4fff0; color:#23b26d; }
-.cancel{ background:#ffe4e4; color:#ff4d4d; }
 
 </style>
 
@@ -193,12 +202,10 @@ table td{
 
 <div class="admin-container">
 
-<!-- SIDEBAR (GIỮ NGUYÊN 100% TỪ PRODUCTS.PHP) -->
+<!-- SIDEBAR -->
 <div class="sidebar">
 
-    <a href="admin_dashboard.php" class="logo">
-        HAN STORE
-    </a>
+    <a href="admin_dashboard.php" class="logo">HAN STORE</a>
 
     <div class="sidebar-content">
         <div class="menu">
@@ -215,12 +222,12 @@ table td{
                 Sản phẩm
             </a>
 
-            <a href="orders.php" class="active">
+            <a href="orders.php">
                 <i class="fa-solid fa-cart-shopping"></i>
                 Đơn hàng
             </a>
 
-            <a href="customers.php">
+            <a href="customers.php" class="active">
                 <i class="fa-solid fa-users"></i>
                 Khách hàng
             </a>
@@ -279,14 +286,14 @@ table td{
 
 </div>
 
-<!-- CONTENT (GIỮ NGUYÊN) -->
+<!-- CONTENT -->
 <div class="main-content">
 
     <div class="topbar">
 
         <div class="page-title">
-            <h1>Quản lý đơn hàng</h1>
-            <p>Theo dõi toàn bộ đơn hàng cửa hàng</p>
+            <h1>Quản lý khách hàng</h1>
+            <p>Danh sách khách hàng đã mua hàng</p>
         </div>
 
         <div class="admin-box">
@@ -302,48 +309,24 @@ table td{
 
     <div class="table-box">
 
-        <div class="chart-title">Đơn hàng gần đây</div>
-
         <table>
 
             <tr>
-                <th>Mã đơn</th>
-                <th>Khách hàng</th>
-                <th>SĐT</th>
-                <th>Ngày</th>
-                <th>Trạng thái</th>
-                <th>Tổng tiền</th>
+                <th>Tên khách hàng</th>
+                <th>Số điện thoại</th>
+                <th>Số đơn</th>
+                <th>Tổng chi tiêu</th>
+                <th>Đơn gần nhất</th>
             </tr>
 
-            <?php foreach ($orders as $o) { ?>
+            <?php foreach ($customers as $c) { ?>
 
             <tr>
-
-                <td>#<?php echo $o['order_id']; ?></td>
-                <td><?php echo $o['receiver_name']; ?></td>
-                <td><?php echo $o['receiver_phone']; ?></td>
-                <td><?php echo $o['created_at']; ?></td>
-
-                <td>
-                    <?php
-                        $status = $o['status'];
-                $class = match ($status) {
-                    'pending' => 'processing',
-                    'shipping' => 'shipping',
-                    'done' => 'success',
-                    default => 'cancel'
-                };
-                ?>
-
-                    <span class="status <?php echo $class; ?>">
-                        <?php echo $status; ?>
-                    </span>
-                </td>
-
-                <td>
-                    <?php echo number_format($o['total_price']); ?> đ
-                </td>
-
+                <td><?php echo $c['receiver_name']; ?></td>
+                <td><?php echo $c['receiver_phone']; ?></td>
+                <td><span class="badge"><?php echo $c['total_orders']; ?></span></td>
+                <td><?php echo number_format($c['total_spent']); ?> đ</td>
+                <td><?php echo $c['last_order']; ?></td>
             </tr>
 
             <?php } ?>

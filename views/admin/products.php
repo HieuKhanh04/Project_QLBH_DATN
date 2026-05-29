@@ -316,17 +316,17 @@ table td{
                     Đơn hàng
                 </a>
 
-                <a href="#">
+                <a href="customers.php">
                     <i class="fa-solid fa-users"></i>
                     Khách hàng
                 </a>
 
-                <a href="#">
+                <a href="promotions.php">
                     <i class="fa-solid fa-tags"></i>
                     Khuyến mãi
                 </a>
 
-                <a href="#">
+                <a href="reports.php">
                     <i class="fa-solid fa-chart-pie"></i>
                     Báo cáo
                 </a>
@@ -390,14 +390,14 @@ table td{
         </div>
 
         <!-- ADMIN ACCOUNT -->
-       <div class="admin-box">
-                <img src="https://i.pravatar.cc/100">
-                <div>
-                    <strong>Admin</strong><br>
-                    <small>Quản trị viên</small>
-                </div>
-                <i class="fa-solid fa-chevron-down"></i>
+        <div class="admin-box">
+            <img src="https://i.pravatar.cc/100">
+            <div>
+                <strong>Admin</strong><br>
+                <small>Quản trị viên</small>
             </div>
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
     </div>
 
     <!-- ACTION -->

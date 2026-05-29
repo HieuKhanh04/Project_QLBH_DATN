@@ -1,15 +1,89 @@
+<?php
+require_once '../../config/database.php';
+
+/* ===== KPI ===== */
+$stmt = $conn->query('SELECT COUNT(order_id) AS orders FROM orders');
+$orders = $stmt->fetch(PDO::FETCH_ASSOC)['orders'] ?? 0;
+
+$stmt = $conn->query('SELECT SUM(total_price) AS revenue FROM orders');
+$revenue = $stmt->fetch(PDO::FETCH_ASSOC)['revenue'] ?? 0;
+
+$stmt = $conn->query('
+    SELECT COUNT(order_id) AS new_orders
+    FROM orders
+    WHERE DATE(created_at) = CURDATE()
+');
+$newOrders = $stmt->fetch(PDO::FETCH_ASSOC)['new_orders'] ?? 0;
+
+$stmt = $conn->query('
+    SELECT COUNT(DISTINCT receiver_phone) AS customers 
+    FROM orders
+');
+$customers = $stmt->fetch(PDO::FETCH_ASSOC)['customers'] ?? 0;
+
+/* ===== CHART 7 DAYS ===== */
+$stmt = $conn->query('
+    SELECT 
+        DATE(created_at) AS date,
+        SUM(total_price) AS revenue
+    FROM orders
+    WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+    GROUP BY DATE(created_at)
+    ORDER BY date ASC
+');
+
+$labels = [];
+$values = [];
+
+foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $labels[] = $row['date'];
+    $values[] = (float) $row['revenue'];
+}
+
+/* ===== TOP PRODUCTS ===== */
+$stmt = $conn->query('
+    SELECT 
+        name AS product_name,
+        SUM(quantity) AS sold
+    FROM order_details
+    GROUP BY name
+    ORDER BY sold DESC
+    LIMIT 3
+');
+
+$topProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+/* ===== RECENT ORDERS ===== */
+$stmt = $conn->query('
+    SELECT 
+        o.order_id,
+        o.receiver_name,
+        o.created_at,
+        o.status,
+        o.total_price,
+        od.name AS product_name,
+        od.quantity
+    FROM orders o
+    JOIN order_details od ON o.order_id = od.order_id
+    ORDER BY o.created_at DESC, o.order_id DESC
+    LIMIT 50
+');
+$recentOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+?>
+
 <!DOCTYPE html>
 <html lang="vi">
 
 <head>
 <meta charset="UTF-8">
 <title>Admin Dashboard</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
 
+/* ===== RESET ===== */
 *{
     margin:0;
     padding:0;
@@ -21,434 +95,332 @@ body{
     background:#fff5f9;
 }
 
-/* MAIN */
+/* ===== LAYOUT ===== */
 .admin-container{
     display:flex;
-    min-height:100vh;
 }
 
-/* SIDEBAR */
+/* =========================================================
+   SIDEBAR - GIỮ NGUYÊN 100% THEO FILE PRODUCTS CỦA BẠN
+   ========================================================= */
+
 .sidebar{
-
     width:260px;
-
     background:white;
-
-    padding:30px 20px;
-
     border-right:1px solid #ffd9ea;
-
-    display:flex;
-
-    flex-direction:column;
-
     position:fixed;
-
     top:0;
-
     left:0;
-
     height:100vh;
-
-    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    padding:30px 20px;
 }
 
 .sidebar-content{
-
     flex:1;
-
     overflow-y:auto;
-
     padding-right:5px;
 }
 
-/* LOGO */
 .logo{
-
-    font-family: 'Great Vibes', cursive;
-    font-size: 42px;
-    color: #ff4fa3;
-    font-weight: bold;
-    text-shadow: 0 2px 6px rgba(255, 79, 163, 0.3);
-    text-decoration: none;
+    font-family:'Great Vibes', cursive;
+    font-size:42px;
+    color:#ff4fa3;
+    font-weight:bold;
+    text-decoration:none;
 }
 
-/* MENU */
 .menu-title{
-
-    color:#999;
-
+    margin:30px 0 15px;
     font-size:13px;
-
-    margin:25px 0 15px;
+    color:#999;
+    font-weight:bold;
 }
 
 .menu a{
-
     display:flex;
-
     align-items:center;
-
     gap:12px;
-
     padding:14px 16px;
-
     border-radius:14px;
-
     text-decoration:none;
-
     color:#333;
-
     margin-bottom:10px;
-
     transition:0.2s;
 }
 
 .menu a:hover{
-
     background:#fff0f7;
-
     color:#ff4fa3;
 }
 
-/* ACTIVE */
 .menu .active{
-
     background:#ff4fa3;
-
     color:white;
 }
 
-/* CONTENT */
-.main-content{
-
-    flex:1;
-
-    padding:30px;
-
-    margin-left:260px;
-
-    width:calc(100% - 260px);
+.logout-btn{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 18px;
+    border-radius:14px;
+    color:#ff4fa3;
+    text-decoration:none;
+    margin-top:15px;
 }
 
-/* TOP BAR */
+/* ===== CONTENT ===== */
+.main-content{
+    flex:1;
+    margin-left:260px;
+    padding:30px;
+}
+
+/* TOPBAR */
 .topbar{
-
     display:flex;
-
     justify-content:space-between;
-
     align-items:center;
-
     margin-bottom:30px;
 }
 
-/* TITLE */
 .page-title h1{
-
     font-size:36px;
-
     margin-bottom:10px;
 }
 
 .page-title p{
-
     color:#777;
 }
 
-/* ADMIN INFO */
+/* ADMIN */
 .admin-box{
-
     display:flex;
-
     align-items:center;
-
     gap:15px;
 }
 
 .admin-box img{
-
     width:50px;
     height:50px;
-
     border-radius:50%;
 }
 
-/* CARD GRID */
+/* CARDS */
 .card-grid{
-
     display:grid;
-
     grid-template-columns:repeat(4,1fr);
-
     gap:20px;
-
     margin-bottom:30px;
 }
 
-/* CARD */
 .card{
-
     background:white;
-
     border-radius:22px;
-
     padding:25px;
-
-    box-shadow:0 4px 12px rgba(0,0,0,0.05);
 }
 
 .card-icon{
-
     width:60px;
     height:60px;
-
     border-radius:50%;
-
     background:#fff0f7;
-
     color:#ff4fa3;
-
     display:flex;
-
     align-items:center;
-
     justify-content:center;
-
     font-size:24px;
-
     margin-bottom:20px;
 }
 
 .card-title{
-
     color:#777;
-
-    margin-bottom:10px;
 }
 
 .card-value{
-
     font-size:36px;
-
     font-weight:bold;
-
-    margin-bottom:10px;
 }
 
-.card-growth{
-
-    color:#23b26d;
-
-    font-size:14px;
-}
-
-/* CHART AREA */
+/* DASHBOARD */
 .dashboard-row{
-
     display:grid;
-
     grid-template-columns:2fr 1fr;
-
     gap:20px;
-
-    margin-bottom:30px;
 }
 
-/* CHART */
 .chart-box{
-
     background:white;
-
     border-radius:22px;
-
     padding:25px;
-
-    box-shadow:0 4px 12px rgba(0,0,0,0.05);
 }
 
-.chart-title{
-
-    font-size:24px;
-
-    margin-bottom:30px;
-}
-
-/* FAKE CHART */
-.chart{
-
-    display:flex;
-
-    align-items:flex-end;
-
-    gap:25px;
-
-    height:300px;
-}
-
-.bar{
-
-    flex:1;
-
-    background:#ffd6e8;
-
-    border-radius:12px 12px 0 0;
-}
-
-.bar.active{
-
-    background:#ff4fa3;
-}
-
-/* PRODUCT BOX */
 .product-box{
-
     background:white;
-
     border-radius:22px;
-
     padding:25px;
+}
 
-    box-shadow:0 4px 12px rgba(0,0,0,0.05);
+.section-title{
+    font-size:18px;
+    font-weight:700;
+    margin-bottom:18px;
 }
 
 .product-item{
-
     display:flex;
-
     align-items:center;
+    gap:12px;
+    padding:12px;
+    border-radius:14px;
+    margin-bottom:12px;
+    transition:0.2s;
+}
 
-    gap:15px;
+.product-item:hover{
+    background:#fff0f7;
+}
 
-    margin-bottom:20px;
+.rank{
+    width:28px;
+    height:28px;
+    border-radius:8px;
+    background:#ff4fa3;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:13px;
+    font-weight:bold;
 }
 
 .product-item img{
-
-    width:70px;
-    height:70px;
-
-    border-radius:14px;
-
+    width:55px;
+    height:55px;
+    border-radius:12px;
     object-fit:cover;
 }
 
-.product-info h4{
-
-    margin-bottom:8px;
+.product-info{
+    flex:1;
 }
 
-.product-info p{
-
-    color:#ff4fa3;
-
-    font-weight:bold;
+.name{
+    font-weight:600;
+    margin-bottom:4px;
 }
 
-/* TABLE */
-.table-box{
-
-    background:white;
-
-    border-radius:22px;
-
-    padding:25px;
-
-    box-shadow:0 4px 12px rgba(0,0,0,0.05);
+.sold{
+    font-size:12px;
+    color:#777;
+    margin-bottom:6px;
 }
 
-table{
-
+.bar{
     width:100%;
-
-    border-collapse:collapse;
+    height:6px;
+    background:#f1f1f1;
+    border-radius:10px;
+    overflow:hidden;
 }
 
-table th{
-
-    text-align:left;
-
-    padding-bottom:15px;
-
-    color:#999;
+.bar-fill{
+    height:100%;
+    background:#ff4fa3;
+    border-radius:10px;
 }
 
-table td{
-
-    padding:18px 0;
-
-    border-top:1px solid #f3f3f3;
+.order-box{
+    background:white;
+    border-radius:22px;
+    padding:25px;
 }
 
-/* STATUS */
-.status{
-
-    padding:8px 14px;
-
-    border-radius:30px;
-
-    font-size:13px;
-
-    font-weight:bold;
+.order-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 16px;
+    border-radius:14px;
+    margin-bottom:10px;
+    transition:0.2s;
+    border:1px solid #f3f3f3;
 }
 
-.processing{
-
-    background:#fff0d9;
-
-    color:#ff9800;
+.order-item:hover{
+    background:#fff0f7;
+    transform:translateY(-2px);
 }
 
-.shipping{
-
-    background:#e7f1ff;
-
-    color:#2196f3;
+.order-id{
+    font-weight:700;
+    color:#ff4fa3;
+    width:70px;
 }
 
-.success{
+.order-info{
+    flex:1;
+}
 
-    background:#e4fff0;
+.customer{
+    font-weight:600;
+    margin-bottom:3px;
+}
 
+.date{
+    font-size:12px;
+    color:#777;
+}
+
+.order-price{
+    font-weight:700;
     color:#23b26d;
 }
 
-.menu-title{
-
-    margin:30px 0 15px;
-
+.product{
     font-size:13px;
+    color:#555;
+    margin-top:3px;
+}
 
-    color:#999;
+.qty{
+    font-size:12px;
+    color:#777;
+}
 
+.order-status{
+    padding:6px 10px;
+    border-radius:12px;
+    font-size:12px;
     font-weight:600;
+    background:#e7f1ff;
+    color:#2196f3;
+    margin-right:10px;
 }
 
-.logout-btn{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:12px;
-
-    padding:14px 18px;
-
-    border-radius:14px;
-
-    color:#ff4fa3;
-
-    text-decoration:none;
-
-    transition:0.2s;
-
-    margin-top:15px;
-
-    flex-shrink:0;
+.order-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
 }
 
-.logout-btn:hover{
+.order-table th{
+    text-align:left;
+    padding:12px;
+    font-size:13px;
+    color:#999;
+    border-bottom:1px solid #eee;
+}
 
+.order-table td{
+    padding:14px 12px;
+    border-bottom:1px solid #f5f5f5;
+    font-size:14px;
+}
+
+.order-table tr:hover{
     background:#fff0f7;
 }
 
@@ -460,12 +432,15 @@ table td{
 
 <div class="admin-container">
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
+<!-- =========================================================
+     SIDEBAR GIỮ NGUYÊN 100% TỪ FILE PRODUCTS CỦA BẠN
+     ========================================================= -->
+<div class="sidebar">
 
         <a href="admin_dashboard.php" class="logo">
             HAN STORE
         </a>
+
         <div class="sidebar-content">
             <div class="menu">
 
@@ -473,7 +448,7 @@ table td{
                     MENU CHÍNH
                 </div>
 
-                <a href="admin_dashboard.php" class="active">
+                <a class="active">
                     <i class="fa-solid fa-chart-line"></i>
                     Dashboard
                 </a>
@@ -488,24 +463,25 @@ table td{
                     Đơn hàng
                 </a>
 
-                <a href="#">
+                <a href="customers.php">
                     <i class="fa-solid fa-users"></i>
                     Khách hàng
                 </a>
 
-                <a href="#">
+                <a href="promotions.php">
                     <i class="fa-solid fa-tags"></i>
                     Khuyến mãi
                 </a>
 
-                <a href="#">
+                <a href="reports.php">
                     <i class="fa-solid fa-chart-pie"></i>
                     Báo cáo
                 </a>
 
                 <div class="menu-title">
                     QUẢN LÝ NỘI DUNG
-                </div>  
+                </div>
+
                 <a href="#" class="sidebar-item">
                     <i class="fa-regular fa-folder"></i>
                     Danh mục
@@ -542,281 +518,153 @@ table td{
 
             </div>
         </div>
-    
+
         <a href="../logout.php" class="logout-btn">
             <i class="fa-solid fa-arrow-right-from-bracket"></i>
             Đăng xuất
         </a>
+
+</div>
+
+<!-- CONTENT -->
+<div class="main-content">
+
+    <div class="topbar">
+        <div class="page-title">
+            <h1>Dashboard</h1>
+            <p>Tổng quan hệ thống</p>
+        </div>
+
+        <!-- ADMIN ACCOUNT -->
+        <div class="admin-box">
+            <img src="https://i.pravatar.cc/100">
+            <div>
+                <strong>Admin</strong><br>
+                <small>Quản trị viên</small>
+            </div>
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
     </div>
 
-    <!-- CONTENT -->
-    <div class="main-content">
+    <!-- CARDS -->
+    <div class="card-grid">
 
-        <!-- TOPBAR -->
-        <div class="topbar">
-
-            <div class="page-title">
-
-                <h1>
-                    Chào mừng trở lại, Admin!
-                </h1>
-
-                <p>
-                    Đây là tổng quan hoạt động cửa hàng hôm nay
-                </p>
-
-            </div>
-
-            <div class="admin-box">
-
-                <img src="https://i.pravatar.cc/100">
-
-                <div>
-                    <strong>Admin</strong><br>
-                    <small>Quản trị viên</small>
-                </div>
-
-                <i class="fa-solid fa-chevron-down"></i>
-
-            </div>
-
+        <div class="card">
+            <div class="card-icon"><i class="fa fa-dollar-sign"></i></div>
+            <div class="card-title">Doanh thu</div>
+            <div class="card-value"><?php echo number_format($revenue); ?> đ</div>
         </div>
 
-        <!-- CARDS -->
-        <div class="card-grid">
-
-            <div class="card">
-
-                <div class="card-icon">
-                    <i class="fa-solid fa-dollar-sign"></i>
-                </div>
-
-                <div class="card-title">
-                    Tổng doanh thu
-                </div>
-
-                <div class="card-value">
-                    $100.450
-                </div>
-
-                <div class="card-growth">
-                    +12.5%
-                </div>
-
-            </div>
-
-            <div class="card">
-
-                <div class="card-icon">
-                    <i class="fa-solid fa-bag-shopping"></i>
-                </div>
-
-                <div class="card-title">
-                    Tổng đơn hàng
-                </div>
-
-                <div class="card-value">
-                    5.000
-                </div>
-
-                <div class="card-growth">
-                    +8.7%
-                </div>
-
-            </div>
-
-            <div class="card">
-
-                <div class="card-icon">
-                    <i class="fa-solid fa-cart-plus"></i>
-                </div>
-
-                <div class="card-title">
-                    Đơn mới
-                </div>
-
-                <div class="card-value">
-                    65
-                </div>
-
-                <div class="card-growth">
-                    +15.3%
-                </div>
-
-            </div>
-
-            <div class="card">
-
-                <div class="card-icon">
-                    <i class="fa-solid fa-user"></i>
-                </div>
-
-                <div class="card-title">
-                    Khách hàng
-                </div>
-
-                <div class="card-value">
-                    320
-                </div>
-
-                <div class="card-growth">
-                    +6.4%
-                </div>
-
-            </div>
-
+        <div class="card">
+            <div class="card-icon"><i class="fa fa-cart-shopping"></i></div>
+            <div class="card-title">Đơn hàng</div>
+            <div class="card-value"><?php echo $orders; ?></div>
         </div>
 
-        <!-- CHART + PRODUCT -->
-        <div class="dashboard-row">
-
-            <!-- CHART -->
-            <div class="chart-box">
-
-                <div class="chart-title">
-                    Doanh thu
-                </div>
-
-                <div class="chart">
-
-                    <div class="bar" style="height:120px"></div>
-
-                    <div class="bar" style="height:150px"></div>
-
-                    <div class="bar" style="height:170px"></div>
-
-                    <div class="bar" style="height:180px"></div>
-
-                    <div class="bar" style="height:220px"></div>
-
-                    <div class="bar active" style="height:260px"></div>
-
-                </div>
-
-            </div>
-
-            <!-- PRODUCT -->
-            <div class="product-box">
-
-                <div class="chart-title">
-                    Top sản phẩm
-                </div>
-
-                <div class="product-item">
-
-                    <img src="https://picsum.photos/100?1">
-
-                    <div class="product-info">
-                        <h4>Áo Hoodie</h4>
-                        <p>Đã bán: 456</p>
-                    </div>
-
-                </div>
-
-                <div class="product-item">
-
-                    <img src="https://picsum.photos/100?2">
-
-                    <div class="product-info">
-                        <h4>Áo Sweater</h4>
-                        <p>Đã bán: 332</p>
-                    </div>
-
-                </div>
-
-                <div class="product-item">
-
-                    <img src="https://picsum.photos/100?3">
-
-                    <div class="product-info">
-                        <h4>Quần Jean</h4>
-                        <p>Đã bán: 245</p>
-                    </div>
-
-                </div>
-
-            </div>
-
+        <div class="card">
+            <div class="card-icon"><i class="fa fa-cart-plus"></i></div>
+            <div class="card-title">Đơn mới</div>
+            <div class="card-value"><?php echo $newOrders; ?></div>
         </div>
 
-        <!-- TABLE -->
-        <div class="table-box">
+        <div class="card">
+            <div class="card-icon"><i class="fa fa-user"></i></div>
+            <div class="card-title">Khách hàng</div>
+            <div class="card-value"><?php echo $customers; ?></div>
+        </div>
 
-            <div class="chart-title">
-                Đơn hàng gần đây
+    </div>
+
+    <!-- CHART + PRODUCT -->
+    <div class="dashboard-row">
+
+        <div class="chart-box">
+            <div class="chart-title">Doanh thu 7 ngày</div>
+            <canvas id="revenueChart"></canvas>
+        </div>
+
+        <div class="product-box">
+            <div class="section-title">
+                Top sản phẩm nổi bật
             </div>
 
-            <table>
+            <?php foreach ($topProducts as $index => $p) { ?>
+                <div class="product-item">
+                    <div class="rank">
+                        <?php echo $index + 1; ?>
+                    </div>
+                    <img src="https://picsum.photos/seed/<?php echo $p['product_name']; ?>/100">
+                    <div class="product-info">
+                        <div class="name">
+                            <?php echo htmlspecialchars($p['product_name']); ?>
+                        </div>
 
+                        <div class="sold">
+                            Đã bán: <?php echo $p['sold']; ?> sản phẩm
+                        </div>
+
+                        <div class="bar">
+                            <div class="bar-fill" style="width: <?php echo min(100, $p['sold'] * 5); ?>%"></div>
+                        </div>
+                    </div>
+                </div>
+            <?php } ?>
+        </div>
+
+        <div class="order-box">
+            <div class="section-title">Đơn hàng gần đây</div>
+            <table class="order-table">
                 <tr>
-
                     <th>Mã đơn</th>
                     <th>Khách hàng</th>
                     <th>Sản phẩm</th>
-                    <th>Ngày</th>
+                    <th>Số lượng</th>
+                    <th>Ngày đặt</th>
                     <th>Trạng thái</th>
                     <th>Tổng tiền</th>
-
                 </tr>
 
+                <?php foreach ($recentOrders as $o) { ?>
                 <tr>
+                    <td>#<?php echo $o['order_id']; ?></td>
 
-                    <td>#089508</td>
-                    <td>Nguyễn Văn A</td>
-                    <td>Áo Hoodie</td>
-                    <td>30/11/2025</td>
+                    <td><?php echo htmlspecialchars($o['receiver_name']); ?></td>
+
+                    <td><?php echo htmlspecialchars($o['product_name']); ?></td>
+
+                    <td><?php echo $o['quantity']; ?></td>
+
+                    <td><?php echo date('d/m/Y H:i', strtotime($o['created_at'])); ?></td>
 
                     <td>
-                        <span class="status processing">
-                            Đang xử lý
+                        <span class="order-status">
+                            <?php echo $o['status']; ?>
                         </span>
                     </td>
 
-                    <td>$249</td>
-
+                    <td><?php echo number_format($o['total_price']); ?> đ</td>
                 </tr>
-
-                <tr>
-
-                    <td>#089507</td>
-                    <td>Trần Thị B</td>
-                    <td>Áo Sweater</td>
-                    <td>29/11/2025</td>
-
-                    <td>
-                        <span class="status shipping">
-                            Đang giao
-                        </span>
-                    </td>
-
-                    <td>$130</td>
-
-                </tr>
-
-                <tr>
-
-                    <td>#089506</td>
-                    <td>Lê Văn C</td>
-                    <td>Quần Jean</td>
-                    <td>28/11/2025</td>
-
-                    <td>
-                        <span class="status success">
-                            Hoàn thành
-                        </span>
-                    </td>
-
-                    <td>$89</td>
-
-                </tr>
-
-            </table>
-
+                <?php } ?>
+                </table>
         </div>
-
     </div>
-
 </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById("revenueChart"), {
+    type: "line",
+    data: {
+        labels: <?php echo json_encode($labels); ?>,
+        datasets: [{
+            data: <?php echo json_encode($values); ?>,
+            borderColor: "#ff4fa3",
+            fill: true
+        }]
+    }
+});
+</script>
 
 </body>
 </html>
