@@ -5,6 +5,69 @@ require_once '../../models/ProductModel.php';
 
 $productModel = new ProductModel($conn);
 
+/* ADD PRODUCT */
+if (isset($_POST['add_product'])) {
+    $name = $_POST['name'];
+    $price = $_POST['price'];
+    $description = $_POST['description'];
+    $category_id = $_POST['category_id'];
+
+    $size = $_POST['size'];
+    $color = $_POST['color'];
+    $quantity = $_POST['quantity'];
+
+    $image = $_POST['image'];
+
+    $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name)));
+
+    /* PRODUCTS */
+    $stmt = $conn->prepare('
+        INSERT INTO products
+        (name, slug, price, description, category_id, status)
+        VALUES (?, ?, ?, ?, ?, 1)
+    ');
+
+    $stmt->execute([
+        $name,
+        $slug,
+        $price,
+        $description,
+        $category_id,
+    ]);
+
+    $product_id = $conn->lastInsertId();
+
+    /* VARIANT */
+    $stmt = $conn->prepare('
+        INSERT INTO product_variants
+        (product_id, size, color, price, quantity)
+        VALUES (?, ?, ?, ?, ?)
+    ');
+
+    $stmt->execute([
+        $product_id,
+        $size,
+        $color,
+        $price,
+        $quantity,
+    ]);
+
+    /* IMAGE */
+    $stmt = $conn->prepare('
+        INSERT INTO product_images
+        (product_id, image_url, is_main)
+        VALUES (?, ?, 1)
+    ');
+
+    $stmt->execute([
+        $product_id,
+        $image,
+    ]);
+
+    header('Location: products.php');
+    exit;
+}
+
 /* SEARCH */
 $keyword = $_GET['keyword'] ?? '';
 
@@ -280,6 +343,68 @@ table td{
 .edit-btn{ background:#ffb400; }
 .delete-btn{ background:#ff4d6d; }
 
+/* MODAL */
+
+.modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,.4);
+    z-index:9999;
+
+    justify-content:center;
+    align-items:center;
+}
+
+.modal-content{
+    width:700px;
+    background:white;
+    border-radius:24px;
+    padding:30px;
+}
+
+.modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.close-btn{
+    font-size:30px;
+    cursor:pointer;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+    margin-bottom:15px;
+}
+
+.form-grid input,
+textarea{
+    width:100%;
+    padding:14px;
+    border:1px solid #eee;
+    border-radius:12px;
+    outline:none;
+}
+
+.save-btn{
+    width:100%;
+    border:none;
+    background:#ff4fa3;
+    color:white;
+    padding:15px;
+    border-radius:14px;
+    margin-top:15px;
+    cursor:pointer;
+}
+
 </style>
 
 </head>
@@ -408,7 +533,9 @@ table td{
             <button class="search-btn"><i class="fa fa-search"></i></button>
         </form>
 
-        <button class="add-btn">+ Thêm sản phẩm</button>
+        <button class="add-btn" onclick="openModal()">
+            <i class="fa fa-plus"></i> Thêm sản phẩm
+        </button>
 
     </div>
 
@@ -451,9 +578,11 @@ table td{
                 <td>
                     <div class="action-btns">
 
-                        <button class="edit-btn">
-                            <i class="fa fa-pen"></i>
-                        </button>
+                        <a href="edit_product.php?id=<?php echo $product['product_id']; ?>">
+                            <button type="button" class="edit-btn">
+                                <i class="fa fa-pen"></i>
+                            </button>
+                        </a>
 
                         <a href="?delete=<?php echo $product['product_id']; ?>"
                            onclick="return confirm('Xóa sản phẩm?')">
@@ -478,6 +607,102 @@ table td{
 </div>
 
 </div>
+    <!-- MODAL ADD PRODUCT -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Thêm sản phẩm</h2>
 
+                <span class="close-btn"
+                    onclick="closeModal()">
+                    &times;
+                </span>
+            </div>
+
+            <form method="POST">
+
+                <div class="form-grid">
+
+                    <input
+                        type="text"
+                        name="name"
+                        placeholder="Tên sản phẩm"
+                        required>
+
+                    <input
+                        type="number"
+                        name="price"
+                        placeholder="Giá"
+                        required>
+
+                    <input
+                        type="number"
+                        name="category_id"
+                        placeholder="ID Danh mục"
+                        required>
+
+                    <input
+                        type="text"
+                        name="size"
+                        placeholder="Size (M,L,XL)"
+                        required>
+
+                    <input
+                        type="text"
+                        name="color"
+                        placeholder="Màu sắc"
+                        required>
+
+                    <input
+                        type="number"
+                        name="quantity"
+                        placeholder="Số lượng"
+                        required>
+
+                    <input
+                        type="text"
+                        name="image"
+                        placeholder="URL ảnh"
+                        required>
+
+                </div>
+
+                <textarea
+                    name="description"
+                    placeholder="Mô tả sản phẩm"
+                    rows="4"></textarea>
+
+                <button
+                    type="submit"
+                    name="add_product"
+                    class="save-btn">
+
+                    Lưu sản phẩm
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal()
+        {
+            document.getElementById('productModal').style.display='flex';
+        }
+
+        function closeModal()
+        {
+            document.getElementById('productModal').style.display='none';
+        }
+
+        window.onclick = function(e)
+        {
+            let modal = document.getElementById('productModal');
+
+            if(e.target == modal)
+            {
+                closeModal();
+            }
+        }
+    </script>
 </body>
 </html>
