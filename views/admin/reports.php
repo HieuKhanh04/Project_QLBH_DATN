@@ -325,7 +325,7 @@ body{
         </div>
 
         <div class="admin-box">
-            <img src="https://i.pravatar.cc/100" class="admin-avatar">
+            <img src="https://img.magnific.com/free-vector/smiling-woman-with-glasses_1308-177859.jpg?semt=ais_hybrid&w=740&q=80" class="admin-avatar">
             <div class="admin-info">
                 <div class="admin-name">Admin</div>
                 <div class="admin-role">Quản trị viên</div>

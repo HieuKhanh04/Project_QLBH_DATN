@@ -290,7 +290,7 @@ table td{
         </div>
 
         <div class="admin-box">
-            <img src="https://i.pravatar.cc/100">
+            <img src="https://img.magnific.com/free-vector/smiling-woman-with-glasses_1308-177859.jpg?semt=ais_hybrid&w=740&q=80">
             <div>
                 <strong>Admin</strong><br>
                 <small>Quản trị viên</small>

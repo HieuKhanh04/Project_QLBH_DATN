@@ -69,6 +69,40 @@ $stmt = $conn->query('
     LIMIT 50
 ');
 $recentOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+/* ===== ORDER STATUS ===== */
+
+$pending = $conn->query("
+    SELECT COUNT(*)
+    FROM orders
+    WHERE status='pending'
+")->fetchColumn();
+
+$confirmed = $conn->query("
+    SELECT COUNT(*)
+    FROM orders
+    WHERE status='confirmed'
+")->fetchColumn();
+
+$shipping = $conn->query("
+    SELECT COUNT(*)
+    FROM orders
+    WHERE status='shipping'
+")->fetchColumn();
+
+$delivered = $conn->query("
+    SELECT COUNT(*)
+    FROM orders
+    WHERE status='delivered'
+")->fetchColumn();
+
+$cancelled = $conn->query("
+    SELECT COUNT(*)
+    FROM orders
+    WHERE status='cancelled'
+")->fetchColumn();
+
+$totalOrders = $pending + $confirmed + $shipping + $delivered + $cancelled;
 ?>
 
 <!DOCTYPE html>
@@ -93,16 +127,14 @@ $recentOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 body{
     font-family:Arial;
     background:#fff5f9;
+    width:100%;
+    overflow-x:hidden;
 }
 
 /* ===== LAYOUT ===== */
 .admin-container{
     display:flex;
 }
-
-/* =========================================================
-   SIDEBAR - GIỮ NGUYÊN 100% THEO FILE PRODUCTS CỦA BẠN
-   ========================================================= */
 
 .sidebar{
     width:260px;
@@ -246,8 +278,8 @@ body{
 
 /* DASHBOARD */
 .dashboard-row{
-    display:grid;
-    grid-template-columns:2fr 1fr;
+    display:flex;
+    flex-direction:column;
     gap:20px;
 }
 
@@ -255,6 +287,12 @@ body{
     background:white;
     border-radius:22px;
     padding:25px;
+    height:400px;
+}
+
+#revenueChart{
+    width:100% !important;
+    height:320px !important;
 }
 
 .product-box{
@@ -336,6 +374,7 @@ body{
     background:white;
     border-radius:22px;
     padding:25px;
+    overflow-x:auto;
 }
 
 .order-item{
@@ -400,6 +439,26 @@ body{
     margin-right:10px;
 }
 
+.status-pending{
+    background:#fff3cd;
+    color:#856404;
+}
+
+.status-confirmed{
+    background:#d4edda;
+    color:#155724;
+}
+
+.status-shipping{
+    background:#d1ecf1;
+    color:#0c5460;
+}
+
+.status-delivered{
+    background:#e7d6ff;
+    color:#6f42c1;
+}
+
 .order-table{
     width:100%;
     border-collapse:collapse;
@@ -422,6 +481,121 @@ body{
 
 .order-table tr:hover{
     background:#fff0f7;
+}
+
+.bottom-row{
+    display:grid;
+    grid-template-columns:1.5fr 1fr;
+    gap:20px;
+}
+
+.stats-box{
+    background:#fff;
+    border-radius:22px;
+    padding:25px;
+}
+
+.stats-header{
+    font-size:22px;
+    font-weight:700;
+    margin-bottom:25px;
+}
+
+.stats-content{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+}
+
+.donut-wrap{
+    width:220px;
+    height:220px;
+    position:relative;
+}
+
+.total-center{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    text-align:center;
+}
+
+.total-center h2{
+    font-size:28px;
+}
+
+.total-center p{
+    color:#777;
+    font-size:14px;
+}
+
+.stats-list{
+    flex:1;
+}
+
+.stats-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+}
+
+.stats-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.dot{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+}
+
+.dot1{background:#ff4fa3;}
+.dot2{background:#ff7eb8;}
+.dot3{background:#ff9dc9;}
+.dot4{background:#ffc4dd;}
+.dot5{background:#ff6b6b;}
+
+.report-btn{
+    margin-top:25px;
+    background:#fff0f7;
+    color:#ff4fa3;
+    padding:16px 20px;
+    border-radius:16px;
+    font-weight:600;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.top-row{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:20px;
+}
+
+.status-processing{
+    background:#fff1f6;
+    color:#ff4fa3;
+}
+
+.status-shipping{
+    background:#eef6ff;
+    color:#2196f3;
+}
+
+.status-completed{
+    background:#ecfff4;
+    color:#23b26d;
+}
+
+.status-cancelled{
+    background:#fff0f0;
+    color:#e74c3c;
 }
 
 </style>
@@ -537,7 +711,7 @@ body{
 
         <!-- ADMIN ACCOUNT -->
         <div class="admin-box">
-            <img src="https://i.pravatar.cc/100">
+            <img src="https://img.magnific.com/free-vector/smiling-woman-with-glasses_1308-177859.jpg?semt=ais_hybrid&w=740&q=80">
             <div>
                 <strong>Admin</strong><br>
                 <small>Quản trị viên</small>
@@ -577,75 +751,198 @@ body{
 
     <!-- CHART + PRODUCT -->
     <div class="dashboard-row">
+        <div class="top-row">
 
-        <div class="chart-box">
-            <div class="chart-title">Doanh thu 7 ngày</div>
-            <canvas id="revenueChart"></canvas>
-        </div>
-
-        <div class="product-box">
-            <div class="section-title">
-                Top sản phẩm nổi bật
+            <div class="chart-box">
+                <div class="chart-title">Doanh thu 7 ngày</div>
+                <div style="height:320px;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
             </div>
 
-            <?php foreach ($topProducts as $index => $p) { ?>
-                <div class="product-item">
-                    <div class="rank">
-                        <?php echo $index + 1; ?>
+            <div class="product-box">
+                <div class="section-title">
+                    Top sản phẩm nổi bật
+                </div>
+
+                <?php foreach ($topProducts as $index => $p) { ?>
+                    <div class="product-item">
+                        <div class="rank">
+                            <?php echo $index + 1; ?>
+                        </div>
+                        <img src="https://picsum.photos/seed/<?php echo $p['product_name']; ?>/100">
+                        <div class="product-info">
+                            <div class="name">
+                                <?php echo htmlspecialchars($p['product_name']); ?>
+                            </div>
+
+                            <div class="sold">
+                                Đã bán: <?php echo $p['sold']; ?> sản phẩm
+                            </div>
+
+                            <div class="bar">
+                                <div class="bar-fill" style="width: <?php echo min(100, $p['sold'] * 5); ?>%"></div>
+                            </div>
+                        </div>
                     </div>
-                    <img src="https://picsum.photos/seed/<?php echo $p['product_name']; ?>/100">
-                    <div class="product-info">
-                        <div class="name">
-                            <?php echo htmlspecialchars($p['product_name']); ?>
+                <?php } ?>
+            </div>
+        </div>
+
+        <div class="bottom-row">
+            <!-- ĐƠN HÀNG -->
+            <div class="order-box">
+                <div class="section-title">
+                    Đơn hàng gần đây
+                </div>
+
+                <table class="order-table">
+                    <thead>
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Khách hàng</th>
+                            <th>Sản phẩm</th>
+                            <th>SL</th>
+                            <th>Ngày đặt</th>
+                            <th>Trạng thái</th>
+                            <th>Tổng tiền</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                    <?php foreach ($recentOrders as $o) { ?>
+                        <tr>
+                            <td>
+                                #<?php echo $o['order_id']; ?>
+                            </td>
+
+                            <td>
+                                <?php echo htmlspecialchars($o['receiver_name']); ?>
+                            </td>
+
+                            <td>
+                                <?php echo htmlspecialchars($o['product_name']); ?>
+                            </td>
+
+                            <td>
+                                <?php echo $o['quantity']; ?>
+                            </td>
+
+                            <td>
+                                <?php echo date('d/m/Y', strtotime($o['created_at'])); ?>
+                            </td>
+
+                            <td>
+                                <span class="order-status status-<?php echo $o['status']; ?>">
+                                    <?php echo ucfirst($o['status']); ?>
+                                </span>
+                            </td>
+
+                            <td>
+                                <?php echo number_format($o['total_price']); ?> đ
+                            </td>
+                        </tr>
+                    <?php } ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- THỐNG KÊ -->
+            <div class="stats-box">
+
+                <div class="stats-header">
+                    Thống kê đơn hàng
+                </div>
+
+                <div class="stats-content">
+
+                    <div class="donut-wrap">
+                        <canvas id="orderChart"></canvas>
+
+                        <div class="total-center">
+                            <h2><?php echo $totalOrders; ?></h2>
+                            <p>Tổng đơn</p>
+                        </div>
+                    </div>
+
+                    <div class="stats-list">
+
+                        <div class="stats-item">
+                            <div class="stats-left">
+                                <span class="dot dot1"></span>
+                                Chờ xác nhận
+                            </div>
+                            <strong>
+                                <?php
+                                echo $pending.' ('.
+                                round(($pending / max($totalOrders, 1)) * 100, 1)
+                                .'%)'; ?>
+                            </strong>
                         </div>
 
-                        <div class="sold">
-                            Đã bán: <?php echo $p['sold']; ?> sản phẩm
+                        <div class="stats-item">
+                            <div class="stats-left">
+                                <span class="dot dot2"></span>
+                                Đang giao
+                            </div>
+                            <strong>
+                                <?php
+                                echo $shipping.' ('.
+                                round(($shipping / max($totalOrders, 1)) * 100, 1)
+                                .'%)'; ?>
+                            </strong>
                         </div>
 
-                        <div class="bar">
-                            <div class="bar-fill" style="width: <?php echo min(100, $p['sold'] * 5); ?>%"></div>
+                        <div class="stats-item">
+                            <div class="stats-left">
+                                <span class="dot dot3"></span>
+                                Hoàn thành
+                            </div>
+                            <strong>
+                                <?php
+                                echo $delivered.' ('.
+                                round(($delivered / max($totalOrders, 1)) * 100, 1)
+                                .'%)'; ?>
+                            </strong>
+                        </div>
+
+                        <div class="stats-item">
+                            <div class="stats-left">
+                                <span class="dot dot4"></span>
+                                Đã xác nhận
+                            </div>
+                            <strong>
+                                <?php
+                                echo $confirmed.' ('.
+                                round(($confirmed / max($totalOrders, 1)) * 100, 1)
+                                .'%)'; ?>
+                            </strong>
+                        </div>
+
+                        <div class="stats-item">
+                            <div class="stats-left">
+                                <span class="dot dot5"></span>
+                                Đã hủy
+                            </div>
+
+                            <strong>
+                                <?php
+                                echo $cancelled.' ('.
+                                round(($cancelled / max($totalOrders, 1)) * 100, 1)
+                                .'%)';
+?>
+                            </strong>
                         </div>
                     </div>
                 </div>
-            <?php } ?>
-        </div>
 
-        <div class="order-box">
-            <div class="section-title">Đơn hàng gần đây</div>
-            <table class="order-table">
-                <tr>
-                    <th>Mã đơn</th>
-                    <th>Khách hàng</th>
-                    <th>Sản phẩm</th>
-                    <th>Số lượng</th>
-                    <th>Ngày đặt</th>
-                    <th>Trạng thái</th>
-                    <th>Tổng tiền</th>
-                </tr>
+                <div class="report-btn">
+                    Xem báo cáo chi tiết
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
 
-                <?php foreach ($recentOrders as $o) { ?>
-                <tr>
-                    <td>#<?php echo $o['order_id']; ?></td>
+            </div>
 
-                    <td><?php echo htmlspecialchars($o['receiver_name']); ?></td>
-
-                    <td><?php echo htmlspecialchars($o['product_name']); ?></td>
-
-                    <td><?php echo $o['quantity']; ?></td>
-
-                    <td><?php echo date('d/m/Y H:i', strtotime($o['created_at'])); ?></td>
-
-                    <td>
-                        <span class="order-status">
-                            <?php echo $o['status']; ?>
-                        </span>
-                    </td>
-
-                    <td><?php echo number_format($o['total_price']); ?> đ</td>
-                </tr>
-                <?php } ?>
-                </table>
         </div>
     </div>
 </div>
@@ -653,17 +950,55 @@ body{
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-new Chart(document.getElementById("revenueChart"), {
-    type: "line",
-    data: {
-        labels: <?php echo json_encode($labels); ?>,
-        datasets: [{
-            data: <?php echo json_encode($values); ?>,
-            borderColor: "#ff4fa3",
-            fill: true
-        }]
-    }
-});
+    new Chart(document.getElementById("revenueChart"), {
+        type: "line",
+        data: {
+            labels: <?php echo json_encode($labels); ?>,
+            datasets: [{
+                data: <?php echo json_encode($values); ?>,
+                borderColor: "#ff4fa3",
+                fill: true
+            }]
+        }
+    });
+
+    new Chart(document.getElementById("orderChart"), {
+        type: "doughnut",
+        data: {
+            labels: [
+                "Chờ xác nhận",
+                "Đã xác nhận",
+                "Đang giao",
+                "Hoàn thành",
+                "Đã hủy"
+            ],
+            datasets: [{
+                data: [
+                    <?php echo $pending; ?>,
+                    <?php echo $confirmed; ?>,
+                    <?php echo $shipping; ?>,
+                    <?php echo $delivered; ?>,
+                    <?php echo $cancelled; ?>
+                ],
+                backgroundColor:[
+                    "#ff4fa3", // pending
+                    "#ff7eb8", // confirmed
+                    "#ff9dc9", // shipping
+                    "#ffc4dd", // delivered
+                    "#ff6b6b"  // cancelled
+                ],
+                borderWidth:0
+            }]
+        },
+        options:{
+            cutout:"70%",
+            plugins:{
+                legend:{
+                    display:false
+                }
+            }
+        }
+    });
 </script>
 
 </body>
