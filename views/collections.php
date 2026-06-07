@@ -6,11 +6,11 @@ require_once '../models/ProductModel.php';
 
 $productModel = new ProductModel($conn);
 
-/* LẤY COLLECTIONS */
+/* COLLECTIONS */
 $stmt = $conn->query('SELECT * FROM collections');
 $collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* FILTER COLLECTION */
+/* FILTER */
 $collection_id = $_GET['collection'] ?? 0;
 
 if ($collection_id > 0) {
@@ -24,217 +24,271 @@ if ($collection_id > 0) {
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>Bộ sưu tập</title>
 
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 
 <style>
+
+:root{
+    --pink:#ff4fa3;
+    --pink-hover:#e63d8d;
+}
+
+/* BASE */
 body{
-    font-family:Arial;
     background:#fff7fb;
-    margin:0;
+    font-family:'Quicksand', sans-serif;
+    font-weight:600;
 }
 
 /* TITLE */
-.title{
+.page-title{
     text-align:center;
     font-size:32px;
-    color:#ff4fa3;
-    font-weight:bold;
-    margin:30px 0;
+    font-weight:700;
+    color:var(--pink);
+    margin:25px 0;
 }
 
-/* COLLECTION GRID */
-.collection-box{
-    width:95%;
-    margin:20px auto;
-}
-
-.collection-title{
-    font-size:24px;
-    font-weight:bold;
-    color:#333;
-    margin-bottom:15px;
-}
-
-/* GRID */
-.collection-grid{
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:20px;
-}
-
-/* ITEM */
-.collection-item{
-    text-align:center;
+/* COLLECTION CARD */
+.collection-card{
+    border:none;
+    border-radius:16px;
+    background:#fff;
+    transition:.25s ease;
     text-decoration:none;
     color:#333;
-    transition:0.2s;
-    border-radius:16px;
-    padding:10px;
 }
 
-.collection-item img{
+.collection-card:hover{
+    transform:translateY(-5px);
+    box-shadow:0 10px 20px rgba(0,0,0,.12);
+}
+
+.collection-card img{
     width:100%;
-    height:140px;
+    height:120px;
     object-fit:cover;
-    border-radius:16px;
-    transition:0.2s;
+    border-radius:12px;
 }
 
-.collection-item:hover img{
-    transform:scale(1.05);
+.collection-name{
+    margin-top:10px;
+    font-weight:600;
 }
 
-.collection-item.active{
-    background:#ff4fa3;
-    color:white;
-}
-
-/* PRODUCTS */
-.product-list{
-    width:95%;
-    margin:40px auto;
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:25px;
-}
-
+/* PRODUCT CARD */
 .product-card{
-    background:white;
+    border:none;
     border-radius:18px;
     overflow:hidden;
-    box-shadow:0 4px 15px rgba(0,0,0,0.08);
-    transition:0.2s;
+    background:#fff;
+    transition:.3s ease;
 }
 
 .product-card:hover{
     transform:translateY(-6px);
+    box-shadow:0 12px 25px rgba(0,0,0,.12);
 }
 
-.product-card img{
+.product-img{
     width:100%;
-    height:280px;
+    height:260px;
+}
+
+.product-img img{
+    width:100%;
+    height:100%;
     object-fit:cover;
 }
 
-.product-info{
-    padding:15px;
-}
-
+/* TEXT */
 .product-name{
-    font-weight:bold;
-    margin-bottom:10px;
+    font-weight:700;
+    color:#333;
+    min-height:48px;
 }
 
 .price{
-    color:#ff4fa3;
-    font-weight:bold;
+    color:var(--pink);
+    font-weight:700;
+    font-size:18px;
 }
 
-.add-btn{
-    display:block;
-    text-align:center;
-    padding:10px;
-    background:#ff85c1;
-    color:white;
-    text-decoration:none;
+/* =========================
+   BUTTON SYSTEM (SYNC INDEX)
+========================= */
+
+.btn-pink,
+.btn-outline-pink{
+    height:44px;
+    padding:0 16px;
+    font-size:15px;
+    font-weight:700;
     border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:.25s ease;
+    letter-spacing:.2px;
 }
 
-.add-btn:hover{
-    background:#ff4fa3;
+/* BUY NOW */
+.btn-pink{
+    background:var(--pink);
+    border:2px solid var(--pink);
+    color:#fff;
+    box-shadow:0 2px 6px rgba(255,79,163,.15);
 }
 
-.buy-now-btn{
-        display:block;
-        text-align:center;
-        padding:10px;
-        margin-top:8px;
+.btn-pink:hover{
+    background:var(--pink-hover);
+    border-color:var(--pink-hover);
+    transform:translateY(-2px);
+    box-shadow:0 6px 16px rgba(255,79,163,.25);
+}
 
-        background:#ff4fa3;
-        color:white;
-        text-decoration:none;
-        border-radius:12px;
+/* ADD CART */
+.btn-outline-pink{
+    background:#fff;
+    border:2px solid var(--pink);
+    color:var(--pink);
+    box-shadow:0 2px 6px rgba(255,79,163,.08);
+}
 
-        font-weight:bold;
-        transition:0.2s;
-    }
-
-    .buy-now-btn:hover{
-        background:#e63d8d;
-    }
+.btn-outline-pink:hover{
+    background:var(--pink);
+    color:#fff;
+    transform:translateY(-2px);
+    box-shadow:0 6px 16px rgba(255,79,163,.25);
+}
 
 </style>
+
 </head>
 
 <body>
 
 <?php include 'layout/header.php'; ?>
 
-<div class="title">Bộ sưu tập</div>
+<div class="container py-4">
 
-<!-- COLLECTIONS -->
-<div class="collection-box">
-    <div class="collection-title">Danh sách bộ sưu tập</div>
+    <h2 class="page-title">Bộ sưu tập</h2>
 
-    <div class="collection-grid">
+    <!-- COLLECTION LIST -->
+    <div class="row g-3 mb-5">
 
-        <a href="collections.php"
-           class="collection-item">
-            <img src="https://picsum.photos/200/200?random=1">
-            <div>Tất cả</div>
-        </a>
+        <div class="col-6 col-md-3 col-lg-2">
+            <a href="collections.php"
+               class="collection-card d-block text-center p-2 shadow-sm">
+
+                <img src="https://picsum.photos/200/200?random=1">
+                <div class="collection-name">Tất cả</div>
+
+            </a>
+        </div>
 
         <?php foreach ($collections as $c) { ?>
+
+        <div class="col-6 col-md-3 col-lg-2">
+
             <a href="collections.php?collection=<?php echo $c['collection_id']; ?>"
-               class="collection-item">
+               class="collection-card d-block text-center p-2 shadow-sm">
+
                 <img src="<?php echo $c['image']; ?>">
-                <div><?php echo htmlspecialchars($c['name']); ?></div>
+                <div class="collection-name">
+                    <?php echo htmlspecialchars($c['name']); ?>
+                </div>
+
             </a>
+
+        </div>
+
         <?php } ?>
 
     </div>
-</div>
 
-<!-- PRODUCTS -->
-<div class="product-list">
+    <!-- PRODUCTS -->
+    <div class="row g-4">
 
-    <?php foreach ($products as $p) { ?>
+        <?php foreach ($products as $p) { ?>
 
-        <div class="product-card">
+        <div class="col-12 col-md-6 col-lg-3">
 
-            <img src="https://picsum.photos/400/500">
+            <div class="card product-card shadow-sm">
 
-            <div class="product-info">
+                <a href="product_detail.php?id=<?php echo $p['product_id']; ?>"
+                   class="text-decoration-none text-dark">
 
-                <div class="product-name">
-                    <?php echo htmlspecialchars($p['name']); ?>
-                </div>
+                    <div class="product-img">
+                        <img src="https://picsum.photos/400/500?random=<?php echo $p['product_id']; ?>">
+                    </div>
 
-                <div class="price">
-                    <?php echo number_format($p['price']); ?>₫
-                </div>
+                    <div class="card-body">
 
-                <a class="add-btn"
-                   href="../controllers/CartController.php?action=add&id=<?php echo $p['product_id']; ?>&redirect=collections">
-                    Thêm vào giỏ
+                        <div class="product-name">
+                            <?php echo htmlspecialchars($p['name']); ?>
+                        </div>
+
+                        <div class="price mt-2">
+                            <?php echo number_format($p['price']); ?>₫
+                        </div>
+
+                    </div>
+
                 </a>
 
-                <a class="buy-now-btn"
-                    href="../views/checkout.php?ids=<?php echo $p['product_id']; ?>">
-                        Mua ngay
-                    </a>
+                <!-- BUTTONS SYNC INDEX -->
+                <div class="card-footer bg-white border-0">
+
+                    <div class="row g-2">
+
+                        <div class="col-6">
+
+                            <a href="../controllers/CartController.php?action=add&id=<?php echo $p['product_id']; ?>&redirect=collections"
+                               class="btn btn-outline-pink w-100">
+
+                                Thêm giỏ
+
+                            </a>
+
+                        </div>
+
+                        <div class="col-6">
+
+                            <a href="checkout.php?ids=<?php echo $p['product_id']; ?>"
+                               class="btn btn-pink w-100">
+
+                                Mua ngay
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
 
         </div>
 
-    <?php } ?>
+        <?php } ?>
+
+    </div>
 
 </div>
+
 <?php include 'layout/footer.php'; ?>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

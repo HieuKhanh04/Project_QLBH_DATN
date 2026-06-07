@@ -1,5 +1,4 @@
 <?php
-
 session_start();
 
 require_once '../config/database.php';
@@ -7,23 +6,70 @@ require_once '../models/ProductModel.php';
 
 $productModel = new ProductModel($conn);
 
+$user = $_SESSION['user'] ?? null;
 $cart = $_SESSION['cart'] ?? [];
-$selectedIds = [];
 
 if (isset($_GET['ids']) && !empty($_GET['ids'])) {
-    $selectedIds =
-        explode(',', $_GET['ids']);
-
-    // lưu lại session
-    $_SESSION['checkout_ids'] = $selectedIds;
-} else {
-    // lấy lại nếu reload
-    $selectedIds =
-        $_SESSION['checkout_ids'] ?? [];
+    $_SESSION['checkout_ids'] = explode(',', $_GET['ids']);
 }
 
-$total = 0;
+$checkoutIds = $_SESSION['checkout_ids'] ?? [];
 
+$total = 0;
+$checkoutProducts = [];
+
+foreach ($checkoutIds as $cartKey) {
+    if (!isset($cart[$cartKey])) {
+        continue;
+    }
+
+    $item = $cart[$cartKey];
+
+    $productId = $item['product_id'];
+    $quantity = $item['quantity'];
+    $size = $item['size'] ?? '';
+    $color = $item['color'] ?? '';
+
+    $product = $productModel->getProductById($productId);
+
+    if (!$product) {
+        continue;
+    }
+
+    $stmtImage = $conn->prepare('
+        SELECT image_url
+        FROM product_images
+        WHERE product_id = ?
+        ORDER BY is_main DESC, id ASC
+        LIMIT 1
+    ');
+
+    $stmtImage->execute([$productId]);
+
+    $image = $stmtImage->fetchColumn();
+
+    if (!$image) {
+        $image = 'https://picsum.photos/400/500?random='.$productId;
+    } else {
+        $image = '../'.$image;
+    }
+
+    $subtotal = $product['price'] * $quantity;
+
+    $total += $subtotal;
+
+    $checkoutProducts[] = [
+        'cart_key' => $cartKey,
+        'product_id' => $productId,
+        'name' => $product['name'],
+        'price' => $product['price'],
+        'quantity' => $quantity,
+        'size' => $size,
+        'color' => $color,
+        'image' => $image,
+        'subtotal' => $subtotal,
+    ];
+}
 ?>
 
 <!DOCTYPE html>
@@ -31,1049 +77,970 @@ $total = 0;
 
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Thanh toán</title>
+    <title>Thanh toán</title>
 
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
 
-<style>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap"
+          rel="stylesheet">
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-body{
-    font-family:Arial;
-    background:#fff7fb;
-    color:#333;
-}
+    <style>
 
-/* MAIN */
-.checkout-container{
+        :root{
+            --pink:#ff4fa3;
+            --pink-dark:#e63d8d;
+            --bg:#fff7fb;
+        }
 
-    width:95%;
+        body{
+            background:var(--bg);
+            font-family:'Quicksand',sans-serif;
+            font-weight:600;
+        }
 
-    max-width:1400px;
+        .checkout-card{
+            border:none;
+            border-radius:18px;
+            box-shadow:0 4px 16px rgba(0,0,0,.08);
+        }
 
-    margin:30px auto;
+        .section-title{
+            color:var(--pink);
+            font-size:28px;
+            font-weight:700;
+        }
 
-    display:grid;
+        .btn-pink{
+            background:var(--pink);
+            color:#fff;
+            border:none;
+            border-radius:12px;
+            font-weight:700;
+        }
 
-    grid-template-columns:1fr 420px;
+        .btn-pink:hover{
+            background:var(--pink-dark);
+            color:#fff;
+        }
 
-    gap:30px;
+        .address-box{
+            background:#fff;
+            border-radius:14px;
+            border:1px solid #eee;
+            padding:15px;
+        }
 
-    align-items:start;
-}
+        .address-item{
+            cursor:pointer;
+        }
 
-/* LEFT */
-.checkout-left{
+        .address-item:hover{
+            background:#fff0f7;
+        }
 
-    background:white;
+        .product-thumb{
+            width:80px;
+            height:95px;
+            object-fit:cover;
+            border-radius:12px;
+        }
 
-    border-radius:20px;
+        .product-name{
+            font-size:15px;
+            font-weight:700;
+        }
 
-    padding:35px;
+        .product-meta{
+            font-size:13px;
+            color:#777;
+        }
 
-    box-shadow:0 4px 15px rgba(0,0,0,0.06);
-}
+        .product-price{
+            color:var(--pink);
+            font-weight:700;
+        }
 
-/* RIGHT */
-.checkout-right{
+        .summary-box{
+            position:sticky;
+            top:20px;
+        }
 
-    background:white;
+        .selected-address{
+            display:none;
+            background:#fff0f7;
+            border:1px solid #ffc9e1;
+            padding:12px;
+            border-radius:12px;
+            margin-top:10px;
+        }
 
-    border-radius:20px;
+        .nav-tabs .nav-link{
+            color:#666;
+            font-weight:600;
+        }
 
-    padding:30px;
+        .nav-tabs .nav-link.active{
+            color:var(--pink);
+            font-weight:700;
+            border-color:#dee2e6 #dee2e6 #fff;
+        }
 
-    box-shadow:0 4px 15px rgba(0,0,0,0.06);
-
-    position:sticky;
-
-    top:20px;
-}
-
-/* TITLE */
-.section-title{
-
-    font-size:28px;
-
-    color:#ff4fa3;
-
-    margin-bottom:30px;
-
-    font-weight:bold;
-}
-
-/* INPUT */
-.form-group{
-
-    margin-bottom:22px;
-}
-
-.form-group label{
-
-    display:block;
-
-    margin-bottom:10px;
-
-    font-weight:bold;
-
-    font-size:15px;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select{
-
+        #addressTabs{
+    display:flex;
     width:100%;
-
-    padding:14px 16px;
-
-    border:1px solid #ffd4ea;
-
-    border-radius:14px;
-
-    outline:none;
-
-    font-size:15px;
-
-    transition:0.2s;
-}
-
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus{
-
-    border-color:#ff4fa3;
-}
-
-.form-group textarea{
-
-    height:120px;
-
-    resize:none;
-}
-
-/* SHIPPING BOX */
-.shipping-box{
-
-    background:#fff0f7;
-
-    padding:18px;
-
-    border-radius:14px;
-
-    color:#777;
-
-    margin-bottom:25px;
-}
-
-/* PAYMENT */
-.payment-method{
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:15px;
-
-    margin-top:15px;
-}
-
-.payment-item{
-
-    border:1px solid #ffd4ea;
-
-    border-radius:14px;
-
-    padding:18px;
-
-    display:flex;
-
-    align-items:center;
-
-    gap:12px;
-
-    cursor:pointer;
-
-    transition:0.2s;
-}
-
-.payment-item:hover{
-
-    border-color:#ff4fa3;
-
-    background:#fff5fa;
-}
-
-/* CART */
-.cart-title{
-
-    font-size:24px;
-
-    color:#ff4fa3;
-
-    margin-bottom:25px;
-
-    font-weight:bold;
-}
-
-/* PRODUCT */
-.cart-product{
-
-    display:flex;
-
-    gap:15px;
-
-    padding-bottom:20px;
-
-    margin-bottom:20px;
-
-    border-bottom:1px solid #f2f2f2;
-}
-
-.cart-product img{
-
-    width:90px;
-    height:110px;
-
-    object-fit:cover;
-
-    border-radius:14px;
-}
-
-.product-info{
-
-    flex:1;
-}
-
-.product-color{
-
-    color:#999;
-
-    font-size:14px;
-
-    margin-bottom:6px;
-}
-
-.product-name{
-
-    font-size:16px;
-
-    font-weight:bold;
-
-    margin-bottom:10px;
-
-    line-height:1.5;
-}
-
-.product-price{
-
-    color:#ff4fa3;
-
-    font-weight:bold;
-
-    font-size:18px;
-}
-
-.old-price{
-
-    color:#999;
-
-    text-decoration:line-through;
-
-    font-size:14px;
-
-    margin-right:8px;
-}
-
-/* QTY */
-.qty-box{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:12px;
-
-    margin-top:12px;
-}
-
-.qty-btn{
-
-    width:30px;
-    height:30px;
-
-    border:none;
-
-    border-radius:50%;
-
-    background:#ffe3f1;
-
-    color:#ff4fa3;
-
-    cursor:pointer;
-
-    font-weight:bold;
-}
-
-/* COUPON */
-.coupon-box{
-
-    display:flex;
-
-    gap:10px;
-
-    margin:25px 0;
-}
-
-.coupon-box input{
-
-    flex:1;
-
-    padding:13px;
-
-    border:1px solid #ffd4ea;
-
-    border-radius:12px;
-
-    outline:none;
-}
-
-.coupon-box button{
-
-    padding:0 20px;
-
-    border:none;
-
-    border-radius:12px;
-
-    background:#ff4fa3;
-
-    color:white;
-
-    cursor:pointer;
-}
-
-/* SUMMARY */
-.summary{
-
-    margin-top:20px;
-}
-
-.summary-row{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    margin-bottom:18px;
-
-    font-size:16px;
-}
-
-.total{
-
-    font-size:24px;
-
-    font-weight:bold;
-
-    color:#ff4fa3;
-}
-
-/* ORDER BUTTON */
-.order-btn{
-
-    width:100%;
-
-    margin-top:30px;
-
-    padding:18px;
-
-    border:none;
-
-    border-radius:16px;
-
-    background:#ff4fa3;
-
-    color:white;
-
-    font-size:18px;
-    font-weight:bold;
-    cursor:pointer;
-    transition:0.2s;
-}
-
-.order-btn:hover{
-    background:#e63d8d;
-}
-
-.payment-box{
-    margin-top:25px;
-}
-
-.cod-method{
-    margin-top:10px;
-    background:#fff0f7;
-    padding:15px;
-    border-radius:12px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
-
-.checkout-qty{
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
-
-/* ADDRESS */
-.address-box{
-    border:1px solid #ffd4ea;
-    border-radius:16px;
+    margin-bottom:0;
+    border:1px solid #e9dce4;
+    border-bottom:none;
+    border-radius:16px 16px 0 0;
     overflow:hidden;
-    background:white;
 }
 
-/* TABS */
-.address-tabs{
-    display:flex;
-    border-bottom:1px solid #ffe3f1;
-}
-
-.tab-btn{
+#addressTabs .nav-item{
     flex:1;
-    padding:14px;
-    border:none;
-    background:white;
-    cursor:pointer;
-    font-weight:bold;
-    color:#666;
-    transition:0.2s;
 }
 
-.tab-btn.active{
+        #addressTabs .nav-link{
+            width:100%;
+            border:none;
+            border-radius:0;
+            background:#fff;
+            color:#666;
+            font-weight:600;
+            padding:14px 10px;
+            text-align:center;
+        }
 
-    background:#fff0f7;
-    color:#ff4fa3;
-}
+        #addressTabs .nav-link.active{
+            background:#fdf0f7;
+            color:#ff4fa3;
+        }
 
-/* LIST */
-.address-list{
-    max-height:300px;
-    overflow-y:auto;
-    padding:10px;
-}
+        #addressList{
+            border:1px solid #e9dce4;
+            border-top:none;
+            border-radius:0 0 16px 16px;
+            max-height:300px;
+            overflow-y:auto;
+        }
 
-/* ITEM */
-.address-item{
-    padding:12px;
-    border-radius:10px;
-    cursor:pointer;
-    transition:0.2s;
-}
+        .quantity-box{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            margin-top:8px;
+        }
 
-.address-item:hover{
-    background:#fff0f7;
-    color:#ff4fa3;
-}
+        .qty-btn{
+            width:32px;
+            height:32px;
+            border:none;
+            border-radius:50%;
+            background:#ffe5f1;
+            color:#ff4fa3;
+            font-weight:700;
+            cursor:pointer;
+        }
 
-/* SHIPPING METHOD */
-.shipping-method{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    background:#fff0f7;
-    padding:15px 18px;
-    border-radius:14px;
-    margin-top:10px;
-}
+        .qty-btn:hover{
+            background:#ff4fa3;
+            color:#fff;
+        }
 
-.shipping-left{
-    display:flex;
-    align-items:center;
-    gap:12px;
-}
+        .qty-value{
+            min-width:25px;
+            text-align:center;
+            font-weight:700;
+        }
+        
+    </style>
 
-.shipping-price{
-    color:#ff4fa3;
-    font-weight:bold;
-}
-.shipping-text{
-    display:flex;
-    flex-direction:column;
-}
-
-.shipping-title{
-    white-space:nowrap;
-    font-weight:bold;
-}
-
-.shipping-desc{
-    margin-top:4px;
-    color:#777;
-    white-space:nowrap;
-}
-
-</style>
 </head>
+
 <body>
+
 <?php include 'layout/header.php'; ?>
 
-<div class="checkout-container">
+<div class="container py-4">
 
-    <!-- LEFT -->
-    <div class="checkout-left">
-        <div class="section-title">
-            Thông tin giao hàng
+    <div class="row g-4">
+
+        <!-- LEFT -->
+        <div class="col-lg-8">
+
+            <div class="card checkout-card">
+
+                <div class="card-body">
+
+                    <h3 class="section-title mb-4">
+                        Thông tin giao hàng
+                    </h3>
+
+                    <form action="../controllers/OrderController.php"
+                          method="POST"
+                          id="checkoutForm">
+
+                        <div class="row">
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+                                    Họ và tên
+                                </label>
+
+                                <input type="text"
+                                       name="receiver_name"
+                                       class="form-control"
+                                       required
+                                       value="<?php echo htmlspecialchars($user['name'] ?? ''); ?>">
+
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+                                    Số điện thoại
+                                </label>
+
+                                <input type="text"
+                                       name="receiver_phone"
+                                       class="form-control"
+                                       required
+                                       value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>">
+
+                            </div>
+
+                            <div class="col-md-12 mb-3">
+
+                                <label class="form-label">
+                                    Email
+                                </label>
+
+                                <input type="email"
+                                       name="receiver_email"
+                                       class="form-control"
+                                       value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>">
+
+                            </div>
+
+                            <div class="col-md-12 mb-3">
+
+                                <label class="form-label">
+                                    Số nhà, tên đường
+                                </label>
+
+                                <input type="text"
+                                       id="addressDetail"
+                                       class="form-control"
+                                       required
+                                       placeholder="Ví dụ: Số 12, Đường Lê Lợi">
+
+                            </div>
+                            <div class="col-md-12">
+
+    <label class="form-label">
+        Chọn địa chỉ
+    </label>
+
+    <div class="address-box">
+
+        <ul class="nav nav-tabs" id="addressTabs">
+
+            <li class="nav-item">
+                <button
+                    type="button"
+                    class="nav-link active"
+                    id="provinceTab">
+                    Tỉnh / Thành phố
+                </button>
+            </li>
+
+            <li class="nav-item">
+                <button
+                    type="button"
+                    class="nav-link"
+                    id="districtTab">
+                    Quận / Huyện
+                </button>
+            </li>
+
+            <li class="nav-item">
+                <button
+                    type="button"
+                    class="nav-link"
+                    id="wardTab">
+                    Phường / Xã
+                </button>
+            </li>
+
+        </ul>
+
+<div id="addressList" class="list-group">
+</div>
+
+        <div
+            id="addressList"
+            class="list-group"
+            style="
+                max-height:300px;
+                overflow-y:auto;
+            ">
+            <!-- Đang tải dữ liệu... -->
         </div>
 
-        <div class="form-group">
-            <label>Họ và tên</label>
-            <input type="text"
-            placeholder="Nhập họ và tên">
-
-        </div>
-
-        <div class="form-group">
-            <label>Số điện thoại</label>
-            <input type="text"
-            placeholder="Nhập số điện thoại">
-
-        </div>
-
-        <div class="form-group">
-            <label>Email</label>
-            <input type="email"
-            placeholder="Nhập email (không bắt buộc)">
-
-        </div>
-
-        <div class="form-group">
-            <label>Địa chỉ, tên đường</label>
-            <input type="text"
-            placeholder="Địa chỉ, tên đường">
-
-        </div>
-
-        <div class="form-group">
-            <label>Địa chỉ</label>
-
-            <div class="address-box">
-
-                <!-- TAB -->
-                <div class="address-tabs">
-
-                    <button type="button"
-                        class="tab-btn active"
-                        id="provinceTab">
-                        Tỉnh / Thành phố
-                    </button>
-
-                    <button type="button"
-                        class="tab-btn"
-                        id="districtTab">
-                        Quận / Huyện
-                    </button>
-
-                    <button type="button"
-                        class="tab-btn"
-                        id="wardTab">
-                        Phường / Xã
-                    </button>
-                </div>
-
-                <!-- LIST -->
-                <div class="address-list"
-                    id="addressList">
-                    Đang tải...
-                </div>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Phương thức giao hàng</label>
-
-            <div class="shipping-box"
-                id="shippingBox">
-
-                Nhập địa chỉ để xem các phương thức giao hàng
-
-            </div>
-
-        </div>
-
-        <div class="payment-box">
-            <h3>Phương thức thanh toán</h3>
-            <div class="cod-method">
-                <input type="radio"
-                    checked
-                    disabled>
-
-                <span>
-                    Thanh toán khi nhận hàng (COD)
-                </span>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Ghi chú đơn hàng</label>
-            <textarea></textarea>
+        <div
+            id="selectedAddress"
+            class="selected-address">
         </div>
 
     </div>
 
-    <!-- RIGHT -->
-    <div class="checkout-right">
+    <input
+        type="hidden"
+        name="receiver_address"
+        id="receiverAddress">
 
-        <div class="cart-title">
-            Giỏ hàng
+</div>
+
+<div class="mt-4">
+
+    <label class="form-label fw-bold">
+        Phương thức giao hàng
+    </label>
+
+    <div class="p-4 rounded-4 border bg-light">
+
+        <div class="form-check d-flex justify-content-between align-items-center">
+
+            <div>
+
+                <input
+                    class="form-check-input"
+                    type="radio"
+                    checked
+                    disabled>
+
+                <label class="form-check-label ms-2">
+
+                    <strong>Giao hàng tận nơi</strong>
+
+                    <div class="text-muted">
+                        Nhận hàng từ 2 - 5 ngày
+                    </div>
+
+                </label>
+
+            </div>
+
+            <strong
+                class="text-danger"
+                id="shippingPriceText">
+
+                0₫
+
+            </strong>
+
         </div>
 
-        <?php foreach ($cart as $id => $qty) {
-            // chỉ lấy sản phẩm được tick
-            if (!in_array($id, $selectedIds)) {
-                continue;
-            }
+    </div>
 
-            $product = $productModel->getProductById($id);
+</div>
+<div id="shippingMethodBox" style="display:none;">
+<div class="mt-4">
 
-            if ($product) {
-                $subtotal = $product['price'] * $qty;
+    <label class="form-label fw-bold">
+        Phương thức thanh toán
+    </label>
 
-                $total += $subtotal;
-                ?>
+    <div class="p-3 rounded-4 border bg-light">
 
-            <div class="cart-product">
+        <div class="form-check">
 
-                <img src="https://picsum.photos/200/250">
-                <div class="product-info">
+            <input
+                class="form-check-input"
+                type="radio"
+                name="payment_method"
+                value="COD"
+                checked>
+
+            <label class="form-check-label">
+                Thanh toán khi nhận hàng (COD)
+            </label>
+
+        </div>
+
+    </div>
+
+</div>
+</div>
+
+<div class="col-md-12 mt-3">
+
+    <label class="form-label">
+        Ghi chú
+    </label>
+
+    <textarea
+        name="note"
+        rows="3"
+        class="form-control"></textarea>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- RIGHT -->
+<div class="col-lg-4">
+
+    <div class="card checkout-card summary-box">
+
+        <div class="card-body">
+
+            <h4 class="section-title mb-3">
+                Đơn hàng
+            </h4>
+
+            <?php foreach ($checkoutProducts as $item) { ?>
+
+            <div class="d-flex gap-3 mb-3 pb-3 border-bottom">
+
+                <img
+                    src="<?php echo $item['image']; ?>"
+                    class="product-thumb">
+
+                <div class="flex-grow-1">
 
                     <div class="product-name">
-                        <?php echo htmlspecialchars($product['name'] ?? ''); ?>
+                        <?php echo htmlspecialchars($item['name']); ?>
                     </div>
 
-                    <div class="product-color">
-                        <?php echo $product['color'] ?? '---'; ?> / <?php echo $product['size'] ?? '---'; ?>
+                    <div class="product-meta">
+
+                        <?php if (!empty($item['size'])) { ?>
+                            Size:
+                            <?php echo htmlspecialchars($item['size']); ?>
+                            <br>
+                        <?php } ?>
+
+                        <?php if (!empty($item['color'])) { ?>
+                            Màu:
+                            <?php echo htmlspecialchars($item['color']); ?>
+                            <br>
+                        <?php } ?>
+
+                        SL:
+                        <div class="quantity-box mt-2">
+                            <button
+                                type="button"
+                                class="qty-btn decrease-btn"
+                                data-cart-key="<?php echo $item['cart_key']; ?>">
+
+                                -
+                            </button>
+
+                            <span
+                                class="qty-value"
+                                id="qty-<?php echo $item['cart_key']; ?>">
+
+                                <?php echo $item['quantity']; ?>
+                            </span>
+
+                            <button
+                                type="button"
+                                class="qty-btn increase-btn"
+                                data-cart-key="<?php echo $item['cart_key']; ?>">
+
+                                +
+                            </button>
+
+                        </div>
+
                     </div>
 
-                    <div class="qty-box">
+                    <div
+                        class="product-price mt-1"
+                        id="subtotal-<?php echo $item['cart_key']; ?>">
 
-                        <button class="qty-btn"
-                            onclick="updateQty(<?php echo $id; ?>, 'decrease')">
-
-                            -
-
-                        </button>
-
-                        <span id="qty-<?php echo $id; ?>">
-                            <?php echo $qty; ?>
-                        </span>
-
-                        <button class="qty-btn"
-                            onclick="updateQty(<?php echo $id; ?>, 'increase')">
-
-                            +
-
-                        </button>
-
-                    </div>
-
-                    <div class="product-price"
-                        id="price-<?php echo $id; ?>"
-                        data-price="<?php echo $product['price']; ?>">
-                        <span class="old-price">
-                            <?php echo number_format($product['price'] + 100000); ?>₫
-                        </span>
-                        <?php echo number_format($product['price']); ?>₫
-
+                        <?php echo number_format($item['subtotal']); ?>₫
                     </div>
 
                 </div>
 
             </div>
 
-        <?php }
-            } ?>
+            <?php } ?>
 
-        <!-- COUPON -->
-        <div class="coupon-box">
+            <div class="d-flex justify-content-between mb-2">
 
-            <input type="text"
-            placeholder="Nhập mã khuyến mãi">
+                <span>Tạm tính</span>
 
-            <button>
-                Áp dụng
-            </button>
-
-        </div>
-
-        <!-- SUMMARY -->
-        <div class="summary">
-
-            <div class="summary-row">
-                <span>Tổng tiền hàng</span>
-                <span id="productTotal"
-                    data-total="<?php echo $total; ?>">
+                <span id="productTotal">
                     <?php echo number_format($total); ?>₫
                 </span>
+
             </div>
 
-            <div class="summary-row">
+            <div class="d-flex justify-content-between mb-2">
+
                 <span>Phí vận chuyển</span>
+
                 <span id="shippingFee">
                     0₫
                 </span>
+
             </div>
 
-            <div class="summary-row total">
-                <span>Tổng thanh toán</span>
-                <span id="finalTotal">
+            <hr>
+
+            <div class="d-flex justify-content-between fw-bold fs-5">
+
+                <span>Tổng cộng</span>
+
+                <span
+                    class="text-danger"
+                    id="finalTotal">
+
                     <?php echo number_format($total); ?>₫
+
                 </span>
+
             </div>
+
+            <button
+                type="submit"
+                class="btn btn-pink w-100 mt-3">
+
+                ĐẶT HÀNG
+
+            </button>
 
         </div>
 
-        <form action="../controllers/OrderController.php" method="POST" id="checkoutForm">
-            <input type="hidden" name="name" id="nameInput">
-            <input type="hidden" name="phone" id="phoneInput">
-            <input type="hidden" name="address" id="addressInput">
-
-            <button type="submit" class="order-btn">
-                ĐẶT HÀNG
-            </button>
-        </form>
     </div>
 
 </div>
 
-    <script>
-        let selectedProvinceCode = "";
-        let selectedDistrictCode = "";
-        let selectedProvinceName = "";
-        let selectedDistrictName = "";
-        let selectedWardName = "";
+</div>
 
-        /* LOAD PROVINCE */
-        fetch("https://provinces.open-api.vn/api/p/")
-            .then(res => res.json())
-            .then(data => {
+</form>
 
-                renderProvince(data);
-            });
+</div>
 
-        /* RENDER PROVINCE */
-        function renderProvince(data){
-            let list = document.getElementById("addressList");
-            list.innerHTML = "";
-            data.forEach(item => {
-                list.innerHTML += `
-                    <div class="address-item"
-                        onclick="selectProvince(${item.code}, '${item.name}')">
-                        ${item.name}
-                    </div>
-                `;
-            });
-        }
+<?php include 'layout/footer.php'; ?>
 
-        /* SELECT PROVINCE */
-        function selectProvince(code, name){
-            selectedProvinceCode = code;
-            selectedProvinceName = name;
-            document.getElementById("districtTab")
-                .classList.add("active");
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
 
-            fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`)
-                .then(res => res.json())
-                .then(data => {
-                    renderDistrict(data.districts);
-                });
-        }
+let selectedProvinceCode = '';
+let selectedDistrictCode = '';
 
-        /* SELECT DISTRICT */
-        function selectDistrict(code, name){
-            selectedDistrictCode = code;
-            selectedDistrictName = name;
-            document.getElementById("wardTab")
-                .classList.add("active");
+let selectedProvinceName = '';
+let selectedDistrictName = '';
+let selectedWardName = '';
 
-            fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`)
-                .then(res => res.json())
-                .then(data => {
-                    renderWard(data.wards);
-                });
-        }
+/* LOAD PROVINCE */
+fetch('https://provinces.open-api.vn/api/p/')
+.then(response => response.json())
+.then(data => renderProvince(data));
 
-        function renderDistrict(data){
-            let list =
-                document.getElementById("addressList");
+function renderProvince(data)
+{
+    let list = document.getElementById('addressList');
 
-            list.innerHTML = "";
+    list.innerHTML = '';
 
-            data.forEach(item => {
+    data.forEach(item => {
 
-                list.innerHTML += `
-                    <div class="address-item"
-                        onclick="selectDistrict(${item.code}, '${item.name}')">
+        list.innerHTML += `
+            <button
+                type="button"
+                class="list-group-item list-group-item-action address-item"
+                onclick="selectProvince(${item.code}, '${item.name}')">
 
-                        ${item.name}
+                ${item.name}
 
-                    </div>
-                `;
-            });
-        }
+            </button>
+        `;
+    });
+}
 
-        /* RENDER WARD */
-        function renderWard(data){
+function selectProvince(code,name){
 
-            let list =
-                document.getElementById("addressList");
+    selectedProvinceCode = code;
+    selectedProvinceName = name;
 
-            list.innerHTML = "";
+    // document.getElementById("provinceTab").innerText = name;
 
-            data.forEach(item => {
+    fetch(
+        `https://provinces.open-api.vn/api/p/${code}?depth=2`
+    )
+    .then(r => r.json())
+    .then(d => {
 
-                list.innerHTML += `
-                    <div class="address-item"
-                        onclick="selectWard('${item.name}')">
+        renderDistrict(d.districts);
 
-                        ${item.name}
+        document
+            .getElementById('districtTab')
+            .click();
+    });
+}
 
-                    </div>
-                `;
-            });
-        }
+function selectDistrict(code,name){
 
-        function selectWard(name){
+    selectedDistrictCode = code;
+    selectedDistrictName = name;
 
-            selectedWardName = name;
+    // document.getElementById("districtTab").innerText = name;
 
-            let fullAddress =
-                selectedWardName + ", "
-                + selectedDistrictName + ", "
-                + selectedProvinceName;
+    fetch(
+        `https://provinces.open-api.vn/api/d/${code}?depth=2`
+    )
+    .then(r => r.json())
+    .then(d => {
 
-            /* HIỆN ĐỊA CHỈ */
-            document.getElementById("addressList")
-                .innerHTML = `
-                    <div class="address-item"
-                        style="
-                            background:#fff0f7;
-                            color:#ff4fa3;
-                            font-weight:bold;
-                        ">
-                        ${fullAddress}
-                    </div>
-                `;
+        renderWard(d.wards);
 
-            /* TÍNH SHIP */
-            let ship = 30000;
+        document
+            .getElementById('wardTab')
+            .click();
+    });
+}
 
-            if(
-                selectedProvinceName === "Hà Nội"
-                || selectedProvinceName === "TP Hồ Chí Minh"
-            ){
-                ship = 15000;
-            }
+function selectWard(name){
 
-            if(
-                selectedProvinceName === "Đà Nẵng"
-                || selectedProvinceName === "Hải Phòng"
-                || selectedProvinceName === "Cần Thơ"
-            ){
-                ship = 25000;
-            }
+    selectedWardName = name;
 
-            /* HIỆN SHIPPING */
-            document.getElementById("shippingBox")
-                .innerHTML = `
-                    <div class="shipping-method">
+    // document.getElementById("wardTab").innerText = name;
+    document.getElementById('shippingMethodBox')
+        .style.display = 'block';
 
-                        <div class="shipping-left">
+    updateAddress();
+}
 
-                            <input type="radio"
-                                checked>
+function renderWard(data)
+{
+    let list = document.getElementById('addressList');
 
-                            <div class="shipping-text">
+    list.innerHTML = '';
 
-                                <div class="shipping-title">
-                                    Giao hàng tận nơi
-                                </div>
+    data.forEach(item => {
 
-                                <small class="shipping-desc">
-                                    Nhận hàng từ 2 - 5 ngày
-                                </small>
+        list.innerHTML += `
+            <button
+                type="button"
+                class="list-group-item list-group-item-action address-item"
+                onclick="selectWard('${item.name}')">
 
-                            </div>
+                ${item.name}
 
-                        </div>
+            </button>
+        `;
+    });
+}
 
-                        <div class="shipping-price">
+function selectWard(name)
+{
+    selectedWardName = name;
 
-                            ${ship.toLocaleString()}₫
+    // document.getElementById('wardTab').innerText = name;
+    document.getElementById('shippingMethodBox')
+        .style.display = 'block';
 
-                        </div>
+    let detailAddress =
+        document.getElementById('addressDetail').value.trim();
 
-                    </div>
-                `;
+    let fullAddress = '';
 
-            /* UPDATE TOTAL */
-            updateTotal(ship);
-        }
+    if (detailAddress !== '') {
 
-        /* CLICK TAB */
-        document.getElementById("provinceTab")
-            .onclick = function(){
+        fullAddress =
+            detailAddress + ', ' +
+            selectedWardName + ', ' +
+            selectedDistrictName + ', ' +
+            selectedProvinceName;
 
-            fetch("https://provinces.open-api.vn/api/p/")
-                .then(res => res.json())
-                .then(data => {
+    } else {
 
-                    renderProvince(data);
-                });
-        };
+        fullAddress =
+            selectedWardName + ', ' +
+            selectedDistrictName + ', ' +
+            selectedProvinceName;
+    }
 
-        document.getElementById("districtTab")
-            .onclick = function(){
+    document.getElementById('receiverAddress').value =
+        fullAddress;
 
-            if(!selectedProvinceCode) return;
+    document.getElementById('selectedAddress').style.display =
+        'block';
 
-            fetch(`https://provinces.open-api.vn/api/p/${selectedProvinceCode}?depth=2`)
-                .then(res => res.json())
-                .then(data => {
+    document.getElementById('selectedAddress').innerHTML = `
+        <strong>Địa chỉ giao hàng:</strong>
+        <br>
+        ${fullAddress}
+    `;
 
-                    renderDistrict(data.districts);
-                });
-        };
+    calculateShipping();
+}
 
-        document.getElementById("wardTab")
-            .onclick = function(){
+function calculateShipping()
+{
+    let shipping = 30000;
 
-            if(!selectedDistrictCode) return;
+    if (
+        selectedProvinceName === 'Hà Nội' ||
+        selectedProvinceName === 'Thành phố Hồ Chí Minh'
+    ) {
+        shipping = 15000;
+    }
 
-            fetch(`https://provinces.open-api.vn/api/d/${selectedDistrictCode}?depth=2`)
-                .then(res => res.json())
-                .then(data => {
+    document.getElementById('shippingFee').innerText =
+        shipping.toLocaleString() + '₫';
 
-                    renderWard(data.wards);
-                });
-        };
+    document.getElementById('shippingPriceText').innerText =
+        shipping.toLocaleString() + '₫';
 
-        function updateTotal(ship){
-            let productTotal =
-                <?php echo $total; ?>;
+    let productTotal =
+        <?php echo (int) $total; ?>;
 
-            let finalTotal =
-                productTotal + ship;
+    let finalTotal =
+        productTotal + shipping;
 
-            /* SHIP */
-            document.getElementById("shippingFee")
-                .innerText =
-                    ship.toLocaleString() + "₫";
+    document.getElementById('finalTotal').innerText =
+        finalTotal.toLocaleString() + '₫';
+}
 
-            /* TOTAL */
-            document.getElementById("finalTotal")
-                .innerText =
-                    finalTotal.toLocaleString() + "₫";
-        }
+function renderDistrict(data)
+{
+    let list =
+        document.getElementById('addressList');
 
-    </script>
+    list.innerHTML = '';
 
-    <script>
+    data.forEach(item => {
 
-    async function updateQty(id, action){
+        list.innerHTML += `
+            <button
+                type="button"
+                class="list-group-item list-group-item-action address-item"
+                onclick="selectDistrict(${item.code}, '${item.name}')">
 
-        let response = await fetch(
-            `../controllers/CartController.php?action=${action}&id=${id}&ajax=1`
+                ${item.name}
+
+            </button>
+        `;
+    });
+}
+
+/* FORM VALIDATE */
+document
+.getElementById('checkoutForm')
+.addEventListener('submit', function(e){
+
+    let name =
+        document.querySelector('[name="receiver_name"]').value.trim();
+
+    let phone =
+        document.querySelector('[name="receiver_phone"]').value.trim();
+
+    let address =
+        document.getElementById('receiverAddress').value.trim();
+
+    if (name === '') {
+
+        alert('Vui lòng nhập họ tên');
+
+        e.preventDefault();
+        return;
+    }
+
+    if (phone === '') {
+
+        alert('Vui lòng nhập số điện thoại');
+
+        e.preventDefault();
+        return;
+    }
+
+    if (address === '') {
+
+        alert('Vui lòng chọn địa chỉ giao hàng');
+
+        e.preventDefault();
+        return;
+    }
+});
+
+document
+.getElementById("provinceTab")
+.addEventListener("click", function(){
+
+    fetch("https://provinces.open-api.vn/api/p/")
+        .then(r => r.json())
+        .then(renderProvince);
+});
+
+document
+.getElementById("districtTab")
+.addEventListener("click", function(){
+
+    if(!selectedProvinceCode) return;
+
+    fetch(
+        `https://provinces.open-api.vn/api/p/${selectedProvinceCode}?depth=2`
+    )
+    .then(r => r.json())
+    .then(d => renderDistrict(d.districts));
+});
+
+document
+.getElementById("wardTab")
+.addEventListener("click", function(){
+
+    if(!selectedDistrictCode) return;
+
+    fetch(
+        `https://provinces.open-api.vn/api/d/${selectedDistrictCode}?depth=2`
+    )
+    .then(r => r.json())
+    .then(d => renderWard(d.wards));
+});
+
+document
+.querySelectorAll('#addressTabs .nav-link')
+.forEach(tab => {
+
+    tab.addEventListener('click', function(){
+
+        document
+        .querySelectorAll('#addressTabs .nav-link')
+        .forEach(btn => btn.classList.remove('active'));
+
+        this.classList.add('active');
+    });
+
+});
+
+document
+.querySelectorAll('.increase-btn')
+.forEach(btn => {
+
+    btn.addEventListener('click', function(){
+
+        updateQuantity(
+            this.dataset.cartKey,
+            'increase'
         );
+    });
 
-        let data = await response.json();
+});
 
-        /* lấy số lượng hiện tại */
-        let qtyElement =
-            document.getElementById("qty-" + id);
+document
+.querySelectorAll('.decrease-btn')
+.forEach(btn => {
 
-        let qty =
-            parseInt(qtyElement.innerText);
+    btn.addEventListener('click', function(){
 
-        if(action === "increase"){
-            qty++;
-        }else{
-            if(qty > 1){
-                qty--;
-            }
+        updateQuantity(
+            this.dataset.cartKey,
+            'decrease'
+        );
+    });
+
+});
+
+function updateQuantity(cartKey, action)
+{
+    fetch(
+        '../controllers/update_checkout_quantity.php',
+        {
+            method:'POST',
+            headers:{
+                'Content-Type':
+                'application/x-www-form-urlencoded'
+            },
+            body:
+                'cart_key=' + cartKey +
+                '&action=' + action
+        }
+    )
+    .then(response => response.json())
+    .then(data => {
+
+        if(!data.success){
+            return;
         }
 
-        qtyElement.innerText = qty;
+        document.getElementById(
+            'qty-' + cartKey
+        ).innerText = data.quantity;
 
-        /* GIÁ 1 SP */
-        let priceElement =
-            document.getElementById("price-" + id);
+        document.getElementById(
+            'subtotal-' + cartKey
+        ).innerText =
+            Number(data.subtotal).toLocaleString()
+            + '₫';
 
-        let price =
-            parseInt(priceElement.dataset.price);
+        recalculateTotal();
+    });
+}
 
-        /* UPDATE GIÁ SP */
-        let subtotal = price * qty;
+function recalculateTotal()
+{
+    let total = 0;
 
-        priceElement.innerHTML =
-            subtotal.toLocaleString() + "₫";
+    document
+    .querySelectorAll('[id^="subtotal-"]')
+    .forEach(item => {
 
-        /* UPDATE TỔNG */
-        updateAllTotal();
-    }
+        let value =
+            item.innerText
+            .replaceAll('.', '')
+            .replaceAll(',', '')
+            .replace('₫','')
+            .trim();
 
-    /* TÍNH LẠI TOTAL */
-    function updateAllTotal(){
+        total += parseInt(value) || 0;
+    });
 
-        let productTotal = 0;
+    document.getElementById(
+        'productTotal'
+    ).innerText =
+        total.toLocaleString() + '₫';
 
-        document.querySelectorAll(".product-price")
-            .forEach(item => {
+    let shipping = 0;
 
-                let text = item.innerText.replace(/[^0-9]/g, "");
+    let shippingText =
+        document.getElementById('shippingFee')
+        .innerText;
 
-                productTotal += parseInt(text);
-            });
+    shipping =
+        parseInt(
+            shippingText
+            .replaceAll('.', '')
+            .replaceAll(',', '')
+            .replace('₫','')
+        ) || 0;
 
-        /* SHIP */
-        let shipText =
-            document.getElementById("shippingFee")
-                .innerText
-                .replace(/[₫,.]/g, "");
+    document.getElementById(
+        'finalTotal'
+    ).innerText =
+        (total + shipping).toLocaleString()
+        + '₫';
+}
 
-        let ship = parseInt(shipText) || 0;
+</script>
 
-        /* UPDATE */
-        document.getElementById("productTotal")
-            .innerText =
-                productTotal.toLocaleString() + "₫";
-
-        document.getElementById("finalTotal")
-            .innerText =
-                (productTotal + ship).toLocaleString() + "₫";
-    }
-
-        document.getElementById("checkoutForm").addEventListener("submit", function () {
-
-            const name = document.getElementById("name")?.value || "";
-            const phone = document.getElementById("phone")?.value || "";
-            const address = document.getElementById("addressDetail")?.value || "";
-
-            document.getElementById("nameInput").value = name;
-            document.getElementById("phoneInput").value = phone;
-            document.getElementById("addressInput").value = address;
-        });
-    </script>
-
-    <?php include 'layout/footer.php'; ?>
 </body>
 </html>

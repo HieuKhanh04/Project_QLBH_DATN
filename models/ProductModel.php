@@ -103,4 +103,23 @@ class ProductModel
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function hasVariant($productId)
+    {
+        $sql = "
+        SELECT 
+            SUM(size IS NOT NULL AND size != '') AS has_size,
+            SUM(color IS NOT NULL AND color != '') AS has_color,
+            COUNT(*) AS total
+        FROM product_variants
+        WHERE product_id = ?
+    ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$productId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // chỉ coi là variant khi có size (quan trọng nhất)
+        return $row['has_size'] > 0;
+    }
 }

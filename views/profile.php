@@ -11,123 +11,156 @@ $user = $_SESSION['user'];
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
 <meta charset="UTF-8">
+<title>Tài khoản của tôi</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet"
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-<title>Tài khoản</title>
-
 <style>
 
-/* RESET */
-* {
-    box-sizing: border-box;
+:root{
+    --pink:#ff4fa3;
+    --pink-light:#ff85c1;
+    --bg:#fff7fb;
 }
 
-body {
-    margin: 0;
-    font-family: Arial;
-    background: #fff5f9;
+/* ✅ FIX FONT ĐỒNG BỘ */
+body{
+    background:var(--bg);
+    font-family:'Quicksand', sans-serif;
+    font-weight:600;
 }
 
-/* PAGE CONTAINER */
-.profile-container {
-    width: 1100px;
-    margin: 30px auto;
-    display: flex;
-    gap: 25px;
+/* TITLE */
+.account-title{
+    color:var(--pink);
+    font-size:32px;
+    font-weight:700;
+    text-align:center;
+    margin-bottom:30px;
+}
+
+/* CARD */
+.profile-card{
+    border:none;
+    border-radius:24px;
+    overflow:hidden;
+    box-shadow:0 6px 20px rgba(0,0,0,0.08);
 }
 
 /* SIDEBAR */
-.sidebar {
-    width: 250px;
-    background: white;
-    border-radius: 15px;
-    padding: 20px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+.sidebar{
+    background:white;
 }
 
-/* USER INFO */
-.user-box {
-    text-align: center;
-    margin-bottom: 25px;
+.avatar{
+    width:95px;
+    height:95px;
+    border-radius:50%;
+    background:linear-gradient(135deg,var(--pink),var(--pink-light));
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:white;
+    font-size:38px;
+    margin:auto;
 }
 
-.avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: #ff85c1;
-    margin: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 35px;
+.user-name{
+    font-size:20px;
+    font-weight:700;
+    color:#333;
 }
 
-.user-name {
-    margin-top: 10px;
-    font-size: 18px;
-    font-weight: bold;
+.user-role{
+    color:#888;
+    font-size:14px;
+    font-weight:600;
 }
 
-/* SIDEBAR MENU (ĐÃ SỬA KHÔNG ĐỤNG HEADER) */
-.sidebar-menu {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+/* MENU */
+.profile-menu .list-group-item{
+    border:none;
+    padding:14px 18px;
+    border-radius:12px;
+    margin-bottom:8px;
+    transition:.25s;
+    font-weight:600;
+    font-size:14px;
 }
 
-.sidebar-menu a {
-    padding: 12px;
-    border-radius: 10px;
-    text-decoration: none;
-    color: #444;
-    transition: 0.2s;
+.profile-menu .list-group-item:hover{
+    background:#fff0f7;
+    color:var(--pink);
 }
 
-.sidebar-menu a:hover {
-    background: #ffe3f1;
-    color: #ff4fa3;
+.profile-menu .active-menu{
+    background:#fff0f7;
+    color:var(--pink);
+    font-weight:700;
 }
 
 /* CONTENT */
-.content {
-    flex: 1;
-    background: white;
-    border-radius: 15px;
-    padding: 30px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+.content-card{
+    background:white;
 }
 
-.content h2 {
-    margin-top: 0;
-    color: #ff4fa3;
+.content-title{
+    color:var(--pink);
+    font-weight:700;
+    margin-bottom:25px;
+    font-size:22px;
 }
 
-.info p {
-    font-size: 17px;
-    margin: 15px 0;
+.info-item{
+    padding:16px;
+    background:#fffafd;
+    border-radius:14px;
+    margin-bottom:15px;
 }
 
-/* PAGE HEADER TITLE */
-.profile-page-header {
-    width: 100%;
-    background: white;
-    padding: 20px 50px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
+.info-label{
+    font-size:13px;
+    color:#888;
+    margin-bottom:5px;
 }
 
-.header-title{
-    font-family: 'Great Vibes', cursive;
-    font-size: 34px;
-    font-weight: normal;
-    color:#ff4fa3;
+.info-value{
+    font-size:16px;
+    font-weight:700;
+    color:#333;
+}
+
+/* BUTTON */
+.btn-pink{
+    background:var(--pink);
+    border:none;
+    color:white;
+    border-radius:12px;
+    padding:10px 20px;
+    font-weight:700;
+}
+
+.btn-pink:hover{
+    background:#e63d8d;
+    color:white;
+}
+
+.btn-outline-pink{
+    border:2px solid var(--pink);
+    color:var(--pink);
+    border-radius:12px;
+    font-weight:700;
+}
+
+.btn-outline-pink:hover{
+    background:var(--pink);
+    color:white;
 }
 
 </style>
@@ -137,73 +170,104 @@ body {
 
 <?php include 'layout/header.php'; ?>
 
-<div class="profile-page-header">
-        <div class="header-title">
-            Tài khoản của tôi
-        </div>
+<div class="container mt-4 mb-4">
+    <h2 class="account-title">Tài khoản của tôi</h2>
 </div>
 
-<div class="profile-container">
+<div class="container mb-5">
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
+    <div class="row g-4">
 
-        <div class="user-box">
-            <div class="avatar">
-                <i class="fa-solid fa-user"></i>
+        <!-- SIDEBAR -->
+        <div class="col-lg-3">
+
+            <div class="profile-card sidebar p-4">
+
+                <div class="text-center">
+
+                    <div class="avatar">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+
+                    <div class="user-name mt-3">
+                        <?php echo htmlspecialchars($user['name']); ?>
+                    </div>
+
+                    <div class="user-role">
+                        <?php echo ($user['role'] ?? 0) == 1 ? 'Quản trị viên' : 'Khách hàng'; ?>
+                    </div>
+
+                </div>
+
+                <hr>
+
+                <div class="profile-menu list-group">
+
+                    <a href="#" class="list-group-item active-menu">
+                        <i class="fa-regular fa-user me-2"></i>
+                        Thông tin tài khoản
+                    </a>
+
+                    <a href="#" class="list-group-item">
+                        <i class="fa-solid fa-box me-2"></i>
+                        Đơn mua
+                    </a>
+
+                    <a href="#" class="list-group-item">
+                        <i class="fa-solid fa-ticket me-2"></i>
+                        Voucher của tôi
+                    </a>
+
+                    <a href="#" class="list-group-item">
+                        <i class="fa-solid fa-lock me-2"></i>
+                        Đổi mật khẩu
+                    </a>
+
+                    <a href="logout.php" class="list-group-item text-danger">
+                        <i class="fa-solid fa-right-from-bracket me-2"></i>
+                        Đăng xuất
+                    </a>
+
+                </div>
+
             </div>
 
-            <div class="user-name">
-                <?php echo $user['name']; ?>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="col-lg-9">
+
+            <div class="profile-card content-card p-4 p-lg-5">
+
+                <h3 class="content-title">Thông tin tài khoản</h3>
+
+                <div class="info-item">
+                    <div class="info-label">Họ và tên</div>
+                    <div class="info-value"><?php echo htmlspecialchars($user['name']); ?></div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value"><?php echo htmlspecialchars($user['email']); ?></div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Vai trò</div>
+                    <div class="info-value">
+                        <?php echo ($user['role'] ?? 0) == 1 ? 'Quản trị viên' : 'Khách hàng'; ?>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+
+                    <button class="btn btn-pink">
+                        <i class="fa-solid fa-pen me-2"></i>
+                        Chỉnh sửa thông tin
+                    </button>
+                    
+                </div>
+
             </div>
-        </div>
-
-        <!-- MENU -->
-        <div class="sidebar-menu">
-
-            <a href="#">
-                <i class="fa-regular fa-user"></i>
-                Thông tin tài khoản
-            </a>
-
-            <a href="#">
-                <i class="fa-solid fa-box"></i>
-                Đơn mua
-            </a>
-
-            <a href="#">
-                <i class="fa-solid fa-tags"></i>
-                Voucher của tôi
-            </a>
-
-            <a href="#">
-                <i class="fa-solid fa-lock"></i>
-                Đổi mật khẩu
-            </a>
-
-            <a href="logout.php">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                Đăng xuất
-            </a>
-
-        </div>
-
-    </div>
-
-    <!-- CONTENT -->
-    <div class="content">
-
-        <h2>Thông tin tài khoản</h2>
-
-        <div class="info">
-
-            <p><strong>Họ tên:</strong> <?php echo $user['name']; ?></p>
-            <p><strong>Email:</strong> <?php echo $user['email']; ?></p>
-
-            <p>
-                <strong>Vai trò:</strong>
-                <?php echo ($user['role'] ?? 0) == 1 ? 'Admin' : 'Khách hàng'; ?>
-            </p>
 
         </div>
 
@@ -212,6 +276,8 @@ body {
 </div>
 
 <?php include 'layout/footer.php'; ?>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>

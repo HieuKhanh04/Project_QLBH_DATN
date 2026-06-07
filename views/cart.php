@@ -11,210 +11,277 @@ $total = 0;
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <title>Giỏ hàng</title>
+<title>Giỏ hàng</title>
 
-    <style>
-        body {
-            font-family: Arial;
-            background: #fff5f9;
-            margin: 0;
-        }
+<style>
 
-        h2 { padding: 20px; }
+:root{
+    --pink:#ff4fa3;
+    --pink-dark:#e63d8d;
+    --bg:#fff7fb;
+}
 
-        .cart-header {
-            display: flex;
-            align-items: center;
-            padding: 15px 20px;
-            border-bottom: 1px solid #ddd;
-            background: white;
-            position: relative;
-        }
+body{
+    background:var(--bg);
+    font-family:'Quicksand', sans-serif;
+    font-weight:600;
+}
 
-        .home-icon {
-            font-size: 22px;
-            color: #ff4fa3;
-            text-decoration: none;
-        }
+/* TITLE */
+.cart-title{
+    color:var(--pink);
+    font-size:28px;
+    font-weight:700;
+}
 
-        .cart-title {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            font-family: 'Great Vibes', cursive;
-            font-size: 34px;
-            color: #ff4fa3;
-        }
+/* CART CARD */
+.cart-item{
+    border:none;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 4px 14px rgba(0,0,0,0.06);
+    transition:.2s;
+    background:#fff;
+}
 
-        .spacer { width: 24px; }
+.cart-item:hover{
+    transform:translateY(-2px);
+}
 
-        .cart-item {
-            display: flex;
-            align-items: center;
-            background: white;
-            margin: 15px 20px;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        }
+/* IMAGE */
+.cart-item img{
+    width:90px;
+    height:90px;
+    object-fit:cover;
+    border-radius:12px;
+}
 
-        .cart-item img {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 10px;
-        }
+/* PRODUCT NAME */
+.item-name{
+    font-size:16px;
+    font-weight:700;
+    color:#333;
+}
 
-        .cart-info {
-            flex: 1;
-            margin-left: 15px;
-        }
+/* META */
+.item-meta{
+    font-size:13px;
+    color:#888;
+}
 
-        .cart-info h3 {
-            margin: 0;
-        }
+/* PRICE */
+.item-price{
+    color:var(--pink);
+    font-weight:700;
+    font-size:15px;
+}
 
-        .cart-info p {
-            color: #e05297;
-            font-weight: bold;
-        }
+/* QTY BUTTON */
+.qty-btn{
+    border:2px solid #eee;
+    background:#fff;
+    width:32px;
+    height:32px;
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    color:#555;
+    text-decoration:none;
+}
 
-        .cart-action {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
+.qty-btn:hover{
+    border-color:var(--pink);
+    color:var(--pink);
+}
 
-        .qty-btn {
-            padding: 5px 10px;
-            background: #ff85c1;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-        }
+/* DELETE */
+.delete-btn{
+    color:#ff4fa3;
+    font-size:18px;
+    transition:.2s;
+}
 
-        .qty-number {
-            font-weight: bold;
-        }
+.delete-btn:hover{
+    color:#e63d8d;
+}
 
-        .remove-btn {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: #ffe5e5;
-            color: red;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-        }
+/* TOTAL BOX */
+.total-box{
+    background:#fff;
+    border-radius:18px;
+    padding:20px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.06);
+}
 
-        .total-box {
-            text-align: right;
-            padding: 20px;
-            font-size: 20px;
-            font-weight: bold;
-        }
+.btn-pink{
+    background:var(--pink);
+    border:none;
+    color:#fff;
+    font-weight:700;
+    border-radius:12px;
+    padding:10px 20px;
+}
 
-        .checkout-btn {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background: #ff85c1;
-            color: white;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-        }
+.btn-pink:hover{
+    background:var(--pink-dark);
+    color:#fff;
+}
 
-        .item-check {
-            width: 20px;
-            height: 20px;
-            margin-right: 15px;
-        }
-    </style>
+/* CHECKBOX */
+.form-check-input:checked{
+    background-color:var(--pink);
+    border-color:var(--pink);
+}
+
+</style>
+
 </head>
 
 <body>
 
 <?php include 'layout/header.php'; ?>
 
-    <div class="cart-header">
-        <div class="cart-title" style="position:static; transform:none;">
-            🛒 Giỏ hàng
+<div class="container py-4">
+
+    <!-- TITLE -->
+    <div class="text-center mb-4">
+        <h2 class="cart-title">🛒 Giỏ hàng</h2>
+    </div>
+
+    <?php if (empty($cart)) { ?>
+        <div class="alert alert-warning text-center">
+            Giỏ hàng đang trống
         </div>
-        <div class="spacer"></div>
+    <?php } ?>
+
+    <?php foreach ($cart as $cartKey => $item) { ?>
+
+    <?php
+        if (!is_array($item)) {
+            continue;
+        }
+
+        $productId = $item['product_id'] ?? 0;
+        $qty = $item['quantity'] ?? 1;
+        $size = $item['size'] ?? '';
+        $color = $item['color'] ?? '';
+
+        $product = $productModel->getProductById($productId);
+        if (!$product) {
+            continue;
+        }
+
+        $stmt = $conn->prepare('
+            SELECT image_url 
+            FROM product_images 
+            WHERE product_id=? 
+            ORDER BY is_main DESC, id ASC 
+            LIMIT 1
+        ');
+        $stmt->execute([$productId]);
+        $image = $stmt->fetchColumn();
+
+        $price = $product['price'] ?? 0;
+        $subtotal = $price * $qty;
+        $total += $subtotal;
+        ?>
+
+    <!-- ITEM -->
+    <div class="card cart-item mb-3">
+
+        <div class="card-body d-flex align-items-center gap-3">
+
+            <!-- checkbox -->
+            <input type="checkbox"
+                   class="form-check-input item-check"
+                   id="check<?php echo md5($cartKey); ?>"
+                   data-id="<?php echo md5($cartKey); ?>"
+                   data-cartkey="<?php echo htmlspecialchars($cartKey); ?>"
+                   data-price="<?php echo $price; ?>"
+                   data-qty="<?php echo $qty; ?>"
+                   onchange="calcTotal()">
+
+            <!-- image -->
+            <img src="../<?php echo $image ?: 'uploads/no-image.jpg'; ?>">
+
+            <!-- info -->
+            <div class="flex-grow-1">
+
+                <div class="item-name">
+                    <?php echo htmlspecialchars($product['name']); ?>
+                </div>
+
+                <div class="item-meta">
+                    Size: <?php echo htmlspecialchars($size); ?> |
+                    Màu: <?php echo htmlspecialchars($color); ?>
+                </div>
+
+                <div class="item-price mt-1">
+                    <?php echo number_format($price); ?> VND
+                </div>
+
+            </div>
+
+            <!-- qty -->
+            <div class="d-flex align-items-center gap-2">
+
+                <a class="qty-btn"
+                   href="../controllers/CartController.php?action=decrease&key=<?php echo urlencode($cartKey); ?>&redirect=cart">
+                    −
+                </a>
+
+                <span class="fw-bold"><?php echo $qty; ?></span>
+
+                <a class="qty-btn"
+                   href="../controllers/CartController.php?action=increase&key=<?php echo urlencode($cartKey); ?>&redirect=cart">
+                    +
+                </a>
+
+            </div>
+
+            <!-- delete -->
+            <a class="delete-btn"
+               href="../controllers/CartController.php?action=remove&key=<?php echo urlencode($cartKey); ?>&redirect=cart"
+               onclick="return confirm('Xóa sản phẩm?')">
+                <i class="fa fa-trash"></i>
+            </a>
+
+        </div>
 
     </div>
 
-<?php foreach ($cart as $productId => $qty) {
-    $product = $productModel->getProductById($productId);
+    <?php } ?>
 
-    // 🔥 FIX: tránh lỗi null product
-    if (!$product) {
-        continue;
-    }
+    <!-- TOTAL -->
+    <div class="total-box mt-4 text-end">
 
-    $price = $product['price'] ?? 0;
-    $subtotal = $price * $qty;
-    $total += $subtotal;
-    ?>
+        <h5>
+            Tổng tiền:
+            <span class="text-danger fw-bold" id="total">
+                <?php echo number_format($total); ?>
+            </span> VND
+        </h5>
 
-<div class="cart-item">
-
-    <input type="checkbox"
-        class="item-check"
-        id="check<?php echo $productId; ?>"
-        data-id="<?php echo $productId; ?>"
-        data-price="<?php echo $price; ?>"
-        data-qty="<?php echo $qty; ?>"
-        onchange="calcTotal()">
-
-    <img src="https://via.placeholder.com/100">
-
-    <div class="cart-info">
-        <h3><?php echo htmlspecialchars($product['name']); ?></h3>
-        <p><?php echo number_format($price); ?> VND</p>
-    </div>
-
-    <div class="cart-action">
-
-        <a class="qty-btn"
-           href="../controllers/CartController.php?action=decrease&id=<?php echo $productId; ?>&redirect=cart">−</a>
-
-        <span class="qty-number"><?php echo $qty; ?></span>
-
-        <a class="qty-btn"
-           href="../controllers/CartController.php?action=increase&id=<?php echo $productId; ?>&redirect=cart">+</a>
-
-        <a class="remove-btn"
-           href="../controllers/CartController.php?action=remove&id=<?php echo $productId; ?>&redirect=cart"
-           onclick="return confirm('Xóa sản phẩm?')">
-            <i class="fa-solid fa-trash"></i>
-        </a>
+        <button class="btn btn-pink mt-2" onclick="goCheckout()">
+            Thanh toán
+        </button>
 
     </div>
 
-</div>
-
-<?php } ?>
-
-<div class="total-box">
-    Tổng tiền: <span id="total"><?php echo number_format($total); ?></span> VND <br>
-
-    <button class="checkout-btn" onclick="goCheckout()">
-        Thanh toán
-    </button>
 </div>
 
 <script>
 function calcTotal() {
-
     let checkboxes = document.querySelectorAll(".item-check");
     let total = 0;
     let checkedItems = [];
@@ -222,11 +289,7 @@ function calcTotal() {
     checkboxes.forEach(cb => {
         if (cb.checked) {
             checkedItems.push(cb.dataset.id);
-
-            let price = parseInt(cb.dataset.price);
-            let qty = parseInt(cb.dataset.qty);
-
-            total += price * qty;
+            total += Number(cb.dataset.price) * Number(cb.dataset.qty);
         }
     });
 
@@ -237,7 +300,6 @@ function calcTotal() {
 }
 
 window.onload = function () {
-
     let saved = JSON.parse(localStorage.getItem("checkedItems")) || [];
 
     saved.forEach(id => {
@@ -249,7 +311,6 @@ window.onload = function () {
 }
 
 function goCheckout() {
-
     let checked = document.querySelectorAll(".item-check:checked");
 
     if (checked.length === 0) {
@@ -258,11 +319,15 @@ function goCheckout() {
     }
 
     let ids = [];
-    checked.forEach(cb => ids.push(cb.dataset.id));
+    checked.forEach(cb => ids.push(cb.dataset.cartkey));
 
     window.location.href = "checkout.php?ids=" + ids.join(",");
 }
 </script>
+
 <?php include 'layout/footer.php'; ?>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

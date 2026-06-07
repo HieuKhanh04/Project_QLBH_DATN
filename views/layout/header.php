@@ -2,9 +2,26 @@
 
 $count = 0;
 
-if (isset($_SESSION['cart'])) {
-    $count = array_sum($_SESSION['cart']);
+if (!empty($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+    foreach ($_SESSION['cart'] as $item) {
+        if (is_array($item) && isset($item['quantity'])) {
+            $count += (int) $item['quantity'];
+        }
+    }
 }
+
+// if (!empty($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+//     foreach ($_SESSION['cart'] as $item) {
+//         if (is_array($item) && isset($item['quantity'])) {
+//             $count += (int) $item['quantity'];
+//         }
+
+//         // trường hợp cart lưu kiểu cũ: [id => qty]
+//         elseif (is_numeric($item)) {
+//             $count += (int) $item;
+//         }
+//     }
+// }
 
 ?>
 <?php
