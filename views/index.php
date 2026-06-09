@@ -273,6 +273,25 @@ input[type=number] {
     <div class="row g-4">
 
         <?php foreach ($products as $p) { ?>
+        <?php
+            $variants = $productModel->getVariantsByProduct($p['product_id']);
+
+            $sizes = [];
+            $colors = [];
+
+            foreach ($variants as $v) {
+                if (!empty($v['size'])) {
+                    $sizes[] = $v['size'];
+                }
+
+                if (!empty($v['color'])) {
+                    $colors[] = $v['color'];
+                }
+            }
+
+            $sizes = array_unique($sizes);
+            $colors = array_unique($colors);
+            ?>
 
         <div class="col-12 col-sm-6 col-lg-3">
 
@@ -299,7 +318,6 @@ input[type=number] {
                 <div class="card-footer bg-white border-0">
 
                     <div class="row g-2">
-
                         <div class="col-6">
                             <button
                                 type="button"
@@ -309,20 +327,19 @@ input[type=number] {
                                 data-name="<?php echo htmlspecialchars($p['name']); ?>"
                                 data-price="<?php echo $p['price']; ?>"
                                 data-image="https://picsum.photos/500/600?random=<?php echo $p['product_id']; ?>"
-                                data-has-variant="<?php echo $productModel->hasVariant($p['product_id']) ? 1 : 0; ?>">
+                                data-has-variant="<?php echo $productModel->hasVariant($p['product_id']) ? 1 : 0; ?>"
+                                data-sizes='<?php echo json_encode(array_values($sizes)); ?>'
+                                data-colors='<?php echo json_encode(array_values($colors)); ?>'
+                            >
                                 Thêm giỏ
                             </button>
                         </div>
 
                         <div class="col-6">
-
                             <a href="product_detail.php?id=<?php echo $p['product_id']; ?>"
                                class="btn btn-pink w-100">
-
                                 Mua ngay
-
                             </a>
-
                         </div>
 
                     </div>
@@ -466,16 +483,32 @@ function openCartModal(btn){
         document.getElementById('sizeBox').style.display = 'block';
         document.getElementById('colorBox').style.display = 'block';
 
-        document.getElementById('modalSize').innerHTML = `
-            <button type="button" class="btn btn-outline-secondary btn-sm me-1 size-btn">S</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm me-1 size-btn">M</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm me-1 size-btn">L</button>
-        `;
+        const sizes = JSON.parse(btn.dataset.sizes || '[]');
+        const colors = JSON.parse(btn.dataset.colors || '[]');
 
-        document.getElementById('modalColor').innerHTML = `
-            <button type="button" class="btn btn-outline-secondary btn-sm me-1 color-btn">Đen</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm me-1 color-btn">Trắng</button>
-        `;
+        let sizeHtml = '';
+        let colorHtml = '';
+
+        sizes.forEach(size => {
+            sizeHtml += `
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm me-1 size-btn">
+                    ${size}
+                </button>
+            `;
+        });
+
+        colors.forEach(color => {
+            colorHtml += `
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm me-1 color-btn">
+                    ${color}
+                </button>
+            `;
+        });
+
+        document.getElementById('modalSize').innerHTML = sizeHtml;
+        document.getElementById('modalColor').innerHTML = colorHtml;
 
     } else {
         document.getElementById('sizeBox').style.display = 'none';
@@ -584,7 +617,6 @@ function updateCartCount(count){
 
     badge.innerText = count;
 }
-
 </script>
 </body>
 </html>

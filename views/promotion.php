@@ -220,7 +220,7 @@ body{
 /* LABEL */
 .modal-body .fw-semibold,
 .modal-body b{
-    font-size:14px;
+    font-size:16px;
     font-weight:600;
     color:#444;
 }
@@ -261,7 +261,7 @@ body{
 
 /* DETAIL LINK giống index */
 #modalDetailLink{
-    font-size:13px;
+    font: size 16px;
     font-weight:500;
     color:#666;
 }
@@ -334,6 +334,25 @@ body{
     <div class="row g-4">
 
         <?php foreach ($products as $p) { ?>
+        <?php
+            $variants = $productModel->getVariantsByProduct($p['product_id']);
+
+            $sizes = [];
+            $colors = [];
+
+            foreach ($variants as $v) {
+                if (!empty($v['size'])) {
+                    $sizes[] = $v['size'];
+                }
+
+                if (!empty($v['color'])) {
+                    $colors[] = $v['color'];
+                }
+            }
+
+            $sizes = array_unique($sizes);
+            $colors = array_unique($colors);
+            ?>
         <?php if ($p['price'] < 300000) { ?>
 
         <div class="col-12 col-md-6 col-lg-3">
@@ -365,23 +384,32 @@ body{
 
                 </a>
 
-                <div class="card-footer bg-white border-0 d-flex gap-2">
-                    <!-- THÊM GIỎ (AJAX - CẬP NHẬT NGAY) -->
-                    <button class="btn btn-outline-pink flex-fill"
-                            onclick="openCartModal(this)"
-                            data-id="<?php echo $p['product_id']; ?>"
-                            data-name="<?php echo htmlspecialchars($p['name']); ?>"
-                            data-price="<?php echo $p['price']; ?>"
-                            data-image="https://picsum.photos/400/500?random=<?php echo $p['product_id']; ?>"
-                            data-has-variant="<?php echo $productModel->hasVariant($p['product_id']) ? 1 : 0; ?>">
-                        Thêm giỏ
-                    </button>
+                <div class="card-footer bg-white border-0">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button
+                                type="button"
+                                class="btn btn-outline-pink w-100 add-cart-btn"
+                                onclick="openCartModal(this)"
+                                data-id="<?php echo $p['product_id']; ?>"
+                                data-name="<?php echo htmlspecialchars($p['name']); ?>"
+                                data-price="<?php echo $p['price']; ?>"
+                                data-image="https://picsum.photos/500/600?random=<?php echo $p['product_id']; ?>"
+                                data-has-variant="<?php echo $productModel->hasVariant($p['product_id']) ? 1 : 0; ?>"
+                                data-sizes='<?php echo json_encode(array_values($sizes)); ?>'
+                                data-colors='<?php echo json_encode(array_values($colors)); ?>'
+                            >
+                                Thêm giỏ
+                            </button>
+                        </div>
 
-                    <!-- MUA NGAY (GIỮ FLOW GIỎ HÀNG) -->
-                    <button class="btn btn-pink flex-fill"
-                            onclick="buyNow(<?php echo $p['product_id']; ?>)">
-                        Mua ngay
-                    </button>
+                        <div class="col-6">
+                            <a href="product_detail.php?id=<?php echo $p['product_id']; ?>"
+                               class="btn btn-pink w-100">
+                                Mua ngay
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -417,13 +445,17 @@ function addToCart(id){
 }
 
 function buyNow(id){
-
-    fetch('../controllers/CartController.php?action=add&id=' + id + '&quantity=1&ajax=1')
+    fetch(
+        '../controllers/CartController.php?action=buy_now'
+        + '&id=' + id
+        + '&quantity=1'
+    )
     .then(res => res.json())
     .then(data => {
-
-        if (data.success) {
+        if(data.success){
             window.location.href = 'checkout.php';
+        }else{
+            alert(data.message || 'Có lỗi xảy ra');
         }
     });
 }
@@ -550,16 +582,32 @@ function openCartModal(btn){
         document.getElementById('sizeBox').style.display = 'block';
         document.getElementById('colorBox').style.display = 'block';
 
-        document.getElementById('modalSize').innerHTML = `
-            <button class="variant-btn" onclick="selectSize(this)">S</button>
-            <button class="variant-btn" onclick="selectSize(this)">M</button>
-            <button class="variant-btn" onclick="selectSize(this)">L</button>
-        `;
+        const sizes = JSON.parse(btn.dataset.sizes || '[]');
+        const colors = JSON.parse(btn.dataset.colors || '[]');
 
-        document.getElementById('modalColor').innerHTML = `
-            <button class="variant-btn" onclick="selectColor(this)">Đen</button>
-            <button class="variant-btn" onclick="selectColor(this)">Trắng</button>
-        `;
+        let sizeHtml = '';
+        let colorHtml = '';
+
+        sizes.forEach(size => {
+            sizeHtml += `
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm me-1 size-btn">
+                    ${size}
+                </button>
+            `;
+        });
+
+        colors.forEach(color => {
+            colorHtml += `
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm me-1 color-btn">
+                    ${color}
+                </button>
+            `;
+        });
+
+        document.getElementById('modalSize').innerHTML = sizeHtml;
+        document.getElementById('modalColor').innerHTML = colorHtml;
 
     } else {
         document.getElementById('sizeBox').style.display = 'none';

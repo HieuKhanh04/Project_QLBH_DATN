@@ -360,28 +360,20 @@ function buyNow(){
     let color = document.getElementById('selectedColor').value;
     let qty = document.getElementById('quantity').value;
 
-    let url = '../controllers/CartController.php?action=buy_now'
+    let hasVariant =
+        <?php echo ($hasSize || $hasColor) ? 'true' : 'false'; ?>;
+
+    if(hasVariant && (!size && !color)){
+        alert('Vui lòng chọn biến thể');
+        return;
+    }
+
+    window.location =
+        '../controllers/CartController.php?action=buy_now'
         + '&id=<?php echo $product['product_id']; ?>'
         + '&size=' + encodeURIComponent(size)
         + '&color=' + encodeURIComponent(color)
         + '&quantity=' + qty;
-
-    fetch(url)
-        .then(res => res.json())
-        .then(data => {
-
-            console.log("BUY NOW RESPONSE:", data);
-
-            if (data.success) {
-                window.location.href = '../views/checkout.php';
-            } else {
-                alert('Buy now failed');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert('Fetch error');
-        });
 }
 
 /* QTY */

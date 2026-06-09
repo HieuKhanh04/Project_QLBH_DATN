@@ -8,67 +8,113 @@ $productModel = new ProductModel($conn);
 
 $user = $_SESSION['user'] ?? null;
 $cart = $_SESSION['cart'] ?? [];
+$buyNow = $_SESSION['buy_now'] ?? null;
 
 if (isset($_GET['ids']) && !empty($_GET['ids'])) {
     $_SESSION['checkout_ids'] = explode(',', $_GET['ids']);
 }
-
+$isBuyNow = !empty($_SESSION['buy_now']);
 $checkoutIds = $_SESSION['checkout_ids'] ?? [];
 
 $total = 0;
 $checkoutProducts = [];
 
-foreach ($checkoutIds as $cartKey) {
-    if (!isset($cart[$cartKey])) {
-        continue;
-    }
-
-    $item = $cart[$cartKey];
-
-    $productId = $item['product_id'];
-    $quantity = $item['quantity'];
-    $size = $item['size'] ?? '';
-    $color = $item['color'] ?? '';
+if ($buyNow) {
+    $productId = $buyNow['product_id'];
+    $quantity = $buyNow['quantity'];
+    $size = $buyNow['size'];
+    $color = $buyNow['color'];
 
     $product = $productModel->getProductById($productId);
 
-    if (!$product) {
-        continue;
+    if ($product) {
+        $stmtImage = $conn->prepare('
+            SELECT image_url
+            FROM product_images
+            WHERE product_id = ?
+            ORDER BY is_main DESC,id ASC
+            LIMIT 1
+        ');
+
+        $stmtImage->execute([$productId]);
+
+        $image = $stmtImage->fetchColumn();
+
+        if (!$image) {
+            $image = 'https://picsum.photos/400/500?random='.$productId;
+        } else {
+            $image = '../'.$image;
+        }
+
+        $subtotal = $product['price'] * $quantity;
+
+        $total += $subtotal;
+
+        $checkoutProducts[] = [
+            'cart_key' => 'buy_now',
+            'product_id' => $productId,
+            'name' => $product['name'],
+            'price' => $product['price'],
+            'quantity' => $quantity,
+            'size' => $size,
+            'color' => $color,
+            'image' => $image,
+            'subtotal' => $subtotal,
+        ];
     }
+} else {
+    foreach ($checkoutIds as $cartKey) {
+        if (!isset($cart[$cartKey])) {
+            continue;
+        }
 
-    $stmtImage = $conn->prepare('
-        SELECT image_url
-        FROM product_images
-        WHERE product_id = ?
-        ORDER BY is_main DESC, id ASC
-        LIMIT 1
-    ');
+        $item = $cart[$cartKey];
 
-    $stmtImage->execute([$productId]);
+        $productId = $item['product_id'];
+        $quantity = $item['quantity'];
+        $size = $item['size'] ?? '';
+        $color = $item['color'] ?? '';
 
-    $image = $stmtImage->fetchColumn();
+        $product = $productModel->getProductById($productId);
 
-    if (!$image) {
-        $image = 'https://picsum.photos/400/500?random='.$productId;
-    } else {
-        $image = '../'.$image;
+        if (!$product) {
+            continue;
+        }
+
+        $stmtImage = $conn->prepare('
+            SELECT image_url
+            FROM product_images
+            WHERE product_id = ?
+            ORDER BY is_main DESC, id ASC
+            LIMIT 1
+        ');
+
+        $stmtImage->execute([$productId]);
+
+        $image = $stmtImage->fetchColumn();
+
+        if (!$image) {
+            $image = 'https://picsum.photos/400/500?random='.$productId;
+        } else {
+            $image = '../'.$image;
+        }
+
+        $subtotal = $product['price'] * $quantity;
+
+        $total += $subtotal;
+
+        $checkoutProducts[] = [
+            'cart_key' => $cartKey,
+            'product_id' => $productId,
+            'name' => $product['name'],
+            'price' => $product['price'],
+            'quantity' => $quantity,
+            'size' => $size,
+            'color' => $color,
+            'image' => $image,
+            'subtotal' => $subtotal,
+        ];
     }
-
-    $subtotal = $product['price'] * $quantity;
-
-    $total += $subtotal;
-
-    $checkoutProducts[] = [
-        'cart_key' => $cartKey,
-        'product_id' => $productId,
-        'name' => $product['name'],
-        'price' => $product['price'],
-        'quantity' => $quantity,
-        'size' => $size,
-        'color' => $color,
-        'image' => $image,
-        'subtotal' => $subtotal,
-    ];
 }
 ?>
 

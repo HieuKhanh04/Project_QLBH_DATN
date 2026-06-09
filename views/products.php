@@ -162,6 +162,67 @@ body{
     background:var(--pink);
     color:#fff;
 }
+
+.modal-custom{
+    border-radius:18px;
+    border:none;
+    box-shadow:0 20px 60px rgba(0,0,0,0.15);
+    overflow:hidden;
+}
+
+.modal-img-box{
+    background:#fff;
+    border-radius:14px;
+    padding:10px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+
+.modal-img-box img{
+    max-height:320px;
+    object-fit:cover;
+    border-radius:12px;
+}
+
+.modal-header{
+    padding:18px 22px;
+    background:#fff;
+}
+
+.btn-close{
+    background-color: transparent !important;
+    opacity: 1 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+#modalDetailLink{
+    color:#555;
+    transition:.2s;
+}
+
+#modalDetailLink:hover{
+    color:#ff4fa3;
+}
+
+/* Ẩn spinner input number */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+.size-btn.active,
+.color-btn.active{
+    background:#ff4fa3 !important;
+    color:#fff !important;
+    border-color:#ff4fa3 !important;
+}
+
+
 </style>
 </head>
 
@@ -202,6 +263,25 @@ body{
     <div class="row g-4">
 
         <?php foreach ($products as $p) { ?>
+        <?php
+            $variants = $productModel->getVariantsByProduct($p['product_id']);
+
+            $sizes = [];
+            $colors = [];
+
+            foreach ($variants as $v) {
+                if (!empty($v['size'])) {
+                    $sizes[] = $v['size'];
+                }
+
+                if (!empty($v['color'])) {
+                    $colors[] = $v['color'];
+                }
+            }
+
+            $sizes = array_unique($sizes);
+            $colors = array_unique($colors);
+            ?>
         <div class="col-12 col-md-6 col-lg-3">
 
             <div class="card product-card shadow-sm">
@@ -225,27 +305,32 @@ body{
 
                 <!-- BUTTONS (GIỐNG INDEX 100%) -->
                 <div class="card-footer bg-white border-0">
-
                     <div class="row g-2">
-
                         <div class="col-6">
-                            <a href="../controllers/CartController.php?action=add&id=<?php echo $p['product_id']; ?>&redirect=products"
-                               class="btn btn-outline-pink w-100">
+                            <button
+                                type="button"
+                                class="btn btn-outline-pink w-100 add-cart-btn"
+                                onclick="openCartModal(this)"
+                                data-id="<?php echo $p['product_id']; ?>"
+                                data-name="<?php echo htmlspecialchars($p['name']); ?>"
+                                data-price="<?php echo $p['price']; ?>"
+                                data-image="https://picsum.photos/500/600?random=<?php echo $p['product_id']; ?>"
+                                data-has-variant="<?php echo $productModel->hasVariant($p['product_id']) ? 1 : 0; ?>"
+                                data-sizes='<?php echo json_encode(array_values($sizes)); ?>'
+                                data-colors='<?php echo json_encode(array_values($colors)); ?>'
+                            >
                                 Thêm giỏ
-                            </a>
+                            </button>
                         </div>
 
                         <div class="col-6">
-                            <a href="checkout.php?ids=<?php echo $p['product_id']; ?>"
+                            <a href="product_detail.php?id=<?php echo $p['product_id']; ?>"
                                class="btn btn-pink w-100">
                                 Mua ngay
                             </a>
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
 
         </div>
@@ -258,6 +343,266 @@ body{
 <?php include 'layout/footer.php'; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<div class="modal fade" id="cartModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+
+    <div class="modal-content modal-custom">
+
+      <!-- HEADER -->
+      <div class="modal-header border-0">
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body pt-0">
+        <div class="row g-4 align-items-start">
+
+          <!-- IMAGE -->
+          <div class="col-md-5 text-center">
+            <div class="modal-img-box">
+              <img id="modalImage" src="" class="img-fluid">
+            </div>
+          </div>
+
+          <!-- INFO -->
+          <div class="col-md-7">
+
+            <h5 id="modalName" class="fw-bold mb-2"></h5>
+
+            <div id="modalPrice" class="text-danger fw-bold fs-5 mb-2"></div>
+
+            <div id="modalStatus" class="mb-3"></div>
+
+            <!-- SIZE -->
+            <div class="mb-2" id="sizeBox" style="display:none;">
+              <div class="fw-semibold mb-1">Size</div>
+              <div id="modalSize"></div>
+            </div>
+
+            <!-- COLOR -->
+            <div class="mb-3" id="colorBox" style="display:none;">
+              <div class="fw-semibold mb-1">Màu sắc</div>
+              <div id="modalColor"></div>
+            </div>
+
+            <!-- QTY -->
+                <div class="mb-3">
+                    <div class="fw-semibold mb-1">Số lượng</div>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                onclick="decreaseQty()">
+                            -
+                        </button>
+
+                        <input type="number"
+                            id="modalQty"
+                            value="1"
+                            min="1"
+                            class="form-control text-center"
+                            style="width:80px;">
+
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                onclick="increaseQty()">
+                            +
+                        </button>
+                    </div>
+                </div>
+                <button class="btn btn-pink w-100 py-2"
+                        onclick="addToCartModal()">
+                Thêm vào giỏ hàng
+                </button>
+
+                <div class="text-center mt-3">
+                    <a id="modalDetailLink"
+                    href="#"
+                    class="text-decoration-underline text-dark fw-semibold">
+                        Xem chi tiết sản phẩm >>
+                    </a>
+                </div>
+            </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+
+let currentProductId = 0;
+let hasVariant = false;
+let selectedSize = '';
+let selectedColor = '';
+
+function openCartModal(btn){
+
+    currentProductId = btn.dataset.id;
+    hasVariant = btn.dataset.hasVariant == "1";
+
+    document.getElementById('modalName').innerText = btn.dataset.name;
+    document.getElementById('modalPrice').innerText =
+        Number(btn.dataset.price).toLocaleString() + '₫';
+
+    document.getElementById('modalImage').src = btn.dataset.image;
+
+    document.getElementById('modalStatus').innerHTML =
+        '<span class="text-success">Còn hàng</span>';
+    
+    document.getElementById('modalDetailLink').href =
+        'product_detail.php?id=' + btn.dataset.id;
+
+    /* RESET */
+    document.getElementById('modalQty').value = 1;
+
+    /* VARIANT LOGIC */
+    if(hasVariant){
+
+        document.getElementById('sizeBox').style.display = 'block';
+        document.getElementById('colorBox').style.display = 'block';
+
+        const sizes = JSON.parse(btn.dataset.sizes || '[]');
+        const colors = JSON.parse(btn.dataset.colors || '[]');
+
+        let sizeHtml = '';
+        let colorHtml = '';
+
+        sizes.forEach(size => {
+            sizeHtml += `
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm me-1 size-btn">
+                    ${size}
+                </button>
+            `;
+        });
+
+        colors.forEach(color => {
+            colorHtml += `
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm me-1 color-btn">
+                    ${color}
+                </button>
+            `;
+        });
+
+        document.getElementById('modalSize').innerHTML = sizeHtml;
+        document.getElementById('modalColor').innerHTML = colorHtml;
+
+    } else {
+        document.getElementById('sizeBox').style.display = 'none';
+        document.getElementById('colorBox').style.display = 'none';
+    }
+
+    new bootstrap.Modal(document.getElementById('cartModal')).show();
+}
+
+/* ADD TO CART */
+function addToCartModal(){
+
+    let qty = document.getElementById('modalQty').value;
+
+    // CHECK BIẾN THỂ
+    if (hasVariant) {
+
+        if (!selectedSize || !selectedColor) {
+            alert('Vui lòng chọn Size và Màu sắc');
+            return;
+        }
+    }
+
+    let url = '../controllers/CartController.php?action=add'
+            + '&id=' + currentProductId
+            + '&quantity=' + qty
+            + '&ajax=1';
+
+    // thêm biến thể nếu có
+    if (hasVariant) {
+        url += '&size=' + encodeURIComponent(selectedSize)
+             + '&color=' + encodeURIComponent(selectedColor);
+    }
+
+    fetch(url)
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.success) {
+
+            alert('Đã thêm vào giỏ hàng');
+
+            // ✅ CẬP NHẬT SỐ LƯỢNG GIỎ NGAY
+            updateCartCount(data.count);
+
+            bootstrap.Modal.getInstance(
+                document.getElementById('cartModal')
+            ).hide();
+
+            // reset selection
+            selectedSize = '';
+            selectedColor = '';
+        }
+    });
+}
+
+function increaseQty(){
+    let input = document.getElementById('modalQty');
+    input.value = parseInt(input.value || 1) + 1;
+}
+
+function decreaseQty(){
+    let input = document.getElementById('modalQty');
+    let val = parseInt(input.value || 1);
+
+    if (val > 1) {
+        input.value = val - 1;
+    }
+}
+
+document.addEventListener('click', function (e) {
+
+    // SIZE
+    if (e.target.classList.contains('size-btn')) {
+
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+
+        selectedSize = e.target.innerText.trim();
+    }
+
+    // COLOR
+    if (e.target.classList.contains('color-btn')) {
+
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+
+        selectedColor = e.target.innerText.trim();
+    }
+});
+
+function updateCartCount(count){
+
+    let badge = document.querySelector('.cart-count');
+
+    if (!badge) {
+
+        // nếu chưa có badge → tạo mới
+        let cartIcon = document.querySelector('a[href="cart.php"]');
+
+        badge = document.createElement('span');
+        badge.className = 'cart-count';
+
+        cartIcon.appendChild(badge);
+    }
+
+    badge.innerText = count;
+}
+
+</script>
 
 </body>
 </html>

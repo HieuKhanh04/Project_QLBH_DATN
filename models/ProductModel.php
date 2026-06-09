@@ -122,4 +122,17 @@ class ProductModel
         // chỉ coi là variant khi có size (quan trọng nhất)
         return $row['has_size'] > 0;
     }
+
+    public function getVariantsByProduct($productId)
+    {
+        $stmt = $this->conn->prepare('
+        SELECT size, color
+        FROM product_variants
+        WHERE product_id = ?
+    ');
+
+        $stmt->execute([$productId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

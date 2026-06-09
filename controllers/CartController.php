@@ -101,31 +101,18 @@ switch ($action) {
            BUY NOW
         ------------------------- */
     case 'buy_now':
-        header('Content-Type: application/json');
-
-        $id = (int) ($_GET['id'] ?? 0);
         $size = trim($_GET['size'] ?? '');
         $color = trim($_GET['color'] ?? '');
         $quantity = max(1, (int) ($_GET['quantity'] ?? 1));
 
-        if ($id <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Invalid product']);
-            exit;
-        }
-
         $_SESSION['buy_now'] = [
-            [
-                'product_id' => $id,
-                'size' => $size,
-                'color' => $color,
-                'quantity' => $quantity,
-            ],
+            'product_id' => $id,
+            'size' => $size,
+            'color' => $color,
+            'quantity' => $quantity,
         ];
 
-        echo json_encode([
-            'success' => true,
-            'debug' => $_SESSION['buy_now'], // 👈 debug luôn
-        ]);
+        header('Location: ../views/checkout.php');
         exit;
 
         /* -------------------------

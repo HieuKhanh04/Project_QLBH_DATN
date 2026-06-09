@@ -38,6 +38,25 @@ if (
 }
 
 /* =========================
+   MUA NGAY HAY GIỎ HÀNG
+========================= */
+
+$isBuyNow = false;
+
+if (!empty($_SESSION['buy_now'])) {
+    $isBuyNow = true;
+
+    $buyNowItems = $_SESSION['buy_now'];
+} else {
+    $checkoutIds = $_SESSION['checkout_ids'] ?? [];
+    $cart = $_SESSION['cart'] ?? [];
+
+    if (empty($checkoutIds)) {
+        exit('Không có sản phẩm để thanh toán');
+    }
+}
+
+/* =========================
    GIỎ HÀNG ĐƯỢC CHỌN
 ========================= */
 
@@ -57,67 +76,87 @@ $totalQuantity = 0;
    LẤY THÔNG TIN SẢN PHẨM
 ========================= */
 
-foreach ($checkoutIds as $cartKey) {
-    if (!isset($cart[$cartKey])) {
-        continue;
+if ($isBuyNow) {
+    foreach ($buyNowItems as $item) {
+        $productId = (int) $item['product_id'];
+        $quantity = (int) $item['quantity'];
+
+        if ($productId <= 0 || $quantity <= 0) {
+            continue;
+        }
+
+        $productId = (int) ($item['product_id'] ?? 0);
+        $quantity = (int) ($item['quantity'] ?? 1);
+
+        if ($productId <= 0 || $quantity <= 0) {
+            continue;
+        }
+
+        $stmtProduct = $conn->prepare('
+            SELECT *
+            FROM products
+            WHERE product_id = ?
+            LIMIT 1
+        ');
+
+        $stmtProduct->execute([$productId]);
+
+        $product = $stmtProduct->fetch(PDO::FETCH_ASSOC);
+
+        if (!$product) {
+            continue;
+        }
+
+        $price = (float) $product['price'];
+        $subtotal = $price * $quantity;
+
+        $totalPrice += $subtotal;
+        $totalQuantity += $quantity;
+
+        $stmtImage = $conn->prepare('
+            SELECT image_url
+            FROM product_images
+            WHERE product_id = ?
+            ORDER BY is_main DESC, id ASC
+            LIMIT 1
+        ');
+
+        $stmtImage->execute([$productId]);
+
+        $image = $stmtImage->fetchColumn();
+
+        if (!$image) {
+            $image = 'uploads/no-image.jpg';
+        }
+
+        $orderItems[] = [
+            'product_id' => $productId,
+            'name' => $product['name'],
+            'quantity' => $quantity,
+            'price' => $price,
+            'subtotal' => $subtotal,
+            'image' => $image,
+            'size' => $item['size'] ?? '',
+            'color' => $item['color'] ?? '',
+        ];
     }
+} else {
+    foreach ($checkoutIds as $cartKey) {
+        if (!isset($cart[$cartKey])) {
+            continue;
+        }
 
-    $item = $cart[$cartKey];
+        $item = $cart[$cartKey];
 
-    $productId = (int) ($item['product_id'] ?? 0);
-    $quantity = (int) ($item['quantity'] ?? 1);
+        $productId = (int) $item['product_id'];
+        $quantity = (int) $item['quantity'];
 
-    if ($productId <= 0 || $quantity <= 0) {
-        continue;
+        if ($productId <= 0 || $quantity <= 0) {
+            continue;
+        }
+
+        // phần xử lý sản phẩm giữ nguyên
     }
-
-    $stmtProduct = $conn->prepare('
-        SELECT *
-        FROM products
-        WHERE product_id = ?
-        LIMIT 1
-    ');
-
-    $stmtProduct->execute([$productId]);
-
-    $product = $stmtProduct->fetch(PDO::FETCH_ASSOC);
-
-    if (!$product) {
-        continue;
-    }
-
-    $price = (float) $product['price'];
-    $subtotal = $price * $quantity;
-
-    $totalPrice += $subtotal;
-    $totalQuantity += $quantity;
-
-    $stmtImage = $conn->prepare('
-        SELECT image_url
-        FROM product_images
-        WHERE product_id = ?
-        ORDER BY is_main DESC, id ASC
-        LIMIT 1
-    ');
-
-    $stmtImage->execute([$productId]);
-
-    $image = $stmtImage->fetchColumn();
-
-    if (!$image) {
-        $image = 'uploads/no-image.jpg';
-    }
-
-    $orderItems[] = [
-        'product_id' => $productId,
-        'name' => $product['name'],
-        'quantity' => $quantity,
-        'price' => $price,
-        'subtotal' => $subtotal,
-        'image' => $image,
-        'size' => $item['size'] ?? '',
-        'color' => $item['color'] ?? '',
-    ];
 }
 
 /* =========================
@@ -224,13 +263,16 @@ try {
        XÓA GIỎ HÀNG ĐÃ THANH TOÁN
     ========================= */
 
-    foreach ($checkoutIds as $cartKey) {
-        if (isset($_SESSION['cart'][$cartKey])) {
-            unset($_SESSION['cart'][$cartKey]);
+    if ($isBuyNow) {
+        unset($_SESSION['buy_now']);
+    } else {
+        foreach ($checkoutIds as $cartKey) {
+            if (isset($_SESSION['cart'][$cartKey])) {
+                unset($_SESSION['cart'][$cartKey]);
+            }
         }
+        unset($_SESSION['checkout_ids']);
     }
-
-    unset($_SESSION['checkout_ids']);
 
     $conn->commit();
 
