@@ -639,9 +639,15 @@ function addToCartModal(){
 
     let qty = document.getElementById('modalQty').value;
 
-    if (hasVariant) {
-        if (!selectedSize || !selectedColor) {
-            alert('Vui lòng chọn Size và Màu sắc');
+   if (hasVariant) {
+        const sizes = document.querySelectorAll('.size-btn');
+        const colors = document.querySelectorAll('.color-btn');
+        if (sizes.length > 0 && !selectedSize) {
+            alert('Vui lòng chọn Size');
+            return;
+        }
+        if (colors.length > 0 && !selectedColor) {
+            alert('Vui lòng chọn Màu sắc');
             return;
         }
     }
