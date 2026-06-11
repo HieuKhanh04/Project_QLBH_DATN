@@ -1,5 +1,4 @@
 <?php
-
 $count = 0;
 
 if (!empty($_SESSION['cart']) && is_array($_SESSION['cart'])) {
@@ -26,6 +25,40 @@ if (!empty($_SESSION['cart']) && is_array($_SESSION['cart'])) {
 ?>
 <?php
 $current = basename($_SERVER['PHP_SELF']);
+
+/* THÔNG BÁO */
+// $customerId = $_SESSION['customer_id'] ?? 0;
+
+$customerId = $_SESSION['user']['user_id'] ?? 0;
+
+$stmt = $conn->prepare('
+    SELECT
+        n.notification_id,
+        n.title,
+        n.content,
+        n.type,
+        n.created_at,
+        COALESCE(r.is_read, 0) AS is_read
+    FROM notifications n
+    LEFT JOIN notification_reads r
+        ON n.notification_id = r.notification_id
+        AND r.customer_id = ?
+    ORDER BY n.created_at DESC
+');
+
+$stmt->execute([$customerId]);
+$notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// echo '<pre>';
+// print_r($notifications);
+// exit;
+
+$unreadCount = 0;
+
+foreach ($notifications as $n) {
+    if ((int) $n['is_read'] === 0) {
+        ++$unreadCount;
+    }
+}
 ?>
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 <link rel="stylesheet"
@@ -295,8 +328,52 @@ rel="stylesheet"> -->
     }
 
     /* hover mở dropdown */
-    .notification-box:hover .notif-dropdown{
+   .notif-dropdown{
+        display:none;
+    }
+
+    .notif-dropdown.show{
         display:block;
+    }
+
+    .notif-item-link{
+        text-decoration:none;
+        color:#333;
+        display:block;
+    }
+
+    .notif-title{
+        font-weight:700;
+        margin-bottom:4px;
+    }
+
+    .notif-content{
+        font-size:12px;
+        color:#777;
+    }
+
+    .notif-item.unread{
+        background:#fff0f7;
+        border-left:4px solid #ff4fa3;
+    }
+
+    .notif-dropdown{
+        width:320px;
+        max-height:400px;
+        overflow-y:auto;
+    }
+
+    .notif-dropdown{
+        position:absolute;
+        top:55px;
+        right:0;
+        width:320px;
+        max-height:400px;
+        overflow-y:auto;
+        background:#fff;
+        border-radius:12px;
+        box-shadow:0 10px 25px rgba(0,0,0,.15);
+        z-index:9999;
     }
 
 </style>
@@ -346,15 +423,48 @@ rel="stylesheet"> -->
 
     <div class="header-icons">
 
-        <a href="#" class="icon-box notification-box">
-        <i class="fa-regular fa-bell"></i>
-        <span class="notif-count">3</span>
-        <div class="notif-dropdown">
-            <div class="notif-item">🎉 Giảm giá 50% toàn shop</div>
-            <div class="notif-item">🚚 Freeship đơn từ 300k</div>
-            <div class="notif-item">🆕 Sản phẩm mới đã cập nhật</div>
+        <div class="notification-box">
+            <a href="javascript:void(0)"
+                class="icon-box"
+                id="notificationBtn">
+                <i class="fa-regular fa-bell"></i>
+                <?php if ($unreadCount > 0) { ?>
+                    <span class="notif-count">
+                        <?php echo $unreadCount; ?>
+                    </span>
+                <?php } ?>
+            </a>
+
+            <div class="notif-dropdown">
+                <?php if (empty($notifications)) { ?>
+                    <div class="notif-item">
+                        Không có thông báo
+                    </div>
+                <?php } ?>
+
+                <?php foreach ($notifications as $n) { ?>
+                    <a href="notification_detail.php?id=<?php echo $n['notification_id']; ?>"
+                    class="notif-item-link">
+                        <div class="notif-item <?php echo $n['is_read'] == 0 ? 'unread' : ''; ?>">
+                            <div class="notif-title">
+                                <?php echo htmlspecialchars($n['title']); ?>
+                            </div>
+
+                            <div class="notif-content">
+                                <?php
+                                echo mb_substr(
+                                    strip_tags($n['content']),
+                                    0,
+                                    60
+                                );
+                    ?>
+                                ...
+                            </div>
+                        </div>
+                    </a>
+                <?php } ?>
+            </div>
         </div>
-    </a>
 
         <a href="profile.php" class="icon-box">
             <i class="fa-regular fa-user"></i>
@@ -377,3 +487,32 @@ rel="stylesheet"> -->
     </div>
 
 </div>
+
+<script>
+
+const notificationBtn =
+    document.getElementById('notificationBtn');
+
+const notificationDropdown =
+    document.querySelector('.notif-dropdown');
+
+notificationBtn.addEventListener('click', function(e){
+
+    e.preventDefault();
+
+    notificationDropdown.classList.toggle('show');
+
+});
+
+/* click ngoài sẽ đóng */
+document.addEventListener('click', function(e){
+
+    if(
+        !e.target.closest('.notification-box')
+    ){
+        notificationDropdown.classList.remove('show');
+    }
+
+});
+
+</script>

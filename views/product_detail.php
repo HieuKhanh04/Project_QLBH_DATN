@@ -43,6 +43,27 @@ $category = $stmt->fetchColumn();
 /* CHECK VARIANTS */
 $hasSize = false;
 $hasColor = false;
+/* REVIEWS */
+$stmt = $conn->prepare('
+    SELECT *
+    FROM product_reviews
+    WHERE product_id = ?
+    ORDER BY created_at DESC
+');
+$stmt->execute([$id]);
+$reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$avgRating = 0;
+if (count($reviews) > 0) {
+    $totalStar = 0;
+    foreach ($reviews as $r) {
+        $totalStar += $r['rating'];
+    }
+    $avgRating = round(
+        $totalStar / count($reviews),
+        1
+    );
+}
 
 foreach ($variants as $v) {
     if (!empty($v['size'])) {
@@ -53,6 +74,24 @@ foreach ($variants as $v) {
     }
 }
 ?>
+
+<?php if (count($reviews) > 0) { ?>
+
+<div class="mb-3">
+
+    <span class="text-warning">
+        <i class="fa-solid fa-star"></i>
+    </span>
+
+    <b><?php echo $avgRating; ?>/5</b>
+
+    <span class="text-muted">
+        (<?php echo count($reviews); ?> đánh giá)
+    </span>
+
+</div>
+
+<?php } ?>
 
 <!DOCTYPE html>
 <html lang="vi">
@@ -291,9 +330,135 @@ Mua ngay
 <hr class="my-4">
 
 <h5 class="fw-bold">Mô tả sản phẩm</h5>
+
 <p class="text-muted">
-<?php echo nl2br($product['description']); ?>
+    <?php echo nl2br($product['description']); ?>
 </p>
+
+<hr class="my-4">
+
+<h5 class="fw-bold mb-3">
+    Đánh giá sản phẩm
+</h5>
+<div class="d-flex align-items-center gap-2 mb-4">
+
+    <span class="fs-4 fw-bold text-warning">
+        <?php echo $avgRating; ?>
+    </span>
+
+    <div>
+
+        <?php
+        $star = round($avgRating);
+
+for ($i = 1; $i <= 5; ++$i) {
+    if ($i <= $star) {
+        echo '<i class="fa-solid fa-star text-warning"></i>';
+    } else {
+        echo '<i class="fa-regular fa-star text-warning"></i>';
+    }
+}
+?>
+
+    </div>
+
+    <span class="text-muted">
+        <?php echo count($reviews); ?> đánh giá
+    </span>
+
+</div>
+
+<?php if (empty($reviews)) { ?>
+
+    <div class="alert alert-light border">
+        Chưa có đánh giá nào.
+    </div>
+
+<?php } else { ?>
+
+    <?php foreach ($reviews as $review) { ?>
+
+        <div class="card mb-3 border-0 shadow-sm">
+
+            <div class="card-body">
+
+                <div class="d-flex justify-content-between">
+
+                    <div>
+
+                        <div class="fw-bold">
+                            <?php
+                    $name = $review['customer_name'];
+        $nameLength = mb_strlen($name);
+        echo mb_substr($name, 0, 1)
+            .str_repeat('*', max($nameLength - 2, 0))
+            .mb_substr($name, -1);
+        ?>
+                        </div>
+
+                        <small class="text-muted">
+                            <?php
+        echo date(
+            'd/m/Y',
+            strtotime($review['created_at'])
+        );
+        ?>
+                        </small>
+
+                    </div>
+
+                </div>
+
+                <!-- SAO -->
+                <div class="my-2">
+
+                    <?php
+                    for ($i = 1; $i <= 5; ++$i) {
+                        if ($i <= $review['rating']) {
+                            echo '<i class="fa-solid fa-star text-warning"></i>';
+                        } else {
+                            echo '<i class="fa-regular fa-star text-warning"></i>';
+                        }
+                    }
+        ?>
+
+                </div>
+
+                <!-- BIẾN THỂ -->
+                <div class="text-muted mb-2">
+
+                    <?php if (!empty($review['size'])) { ?>
+                        Size:
+                        <b><?php echo htmlspecialchars($review['size']); ?></b>
+                    <?php } ?>
+
+                    <?php if (!empty($review['size']) && !empty($review['color'])) { ?>
+                        |
+                    <?php } ?>
+
+                    <?php if (!empty($review['color'])) { ?>
+                        Màu:
+                        <b><?php echo htmlspecialchars($review['color']); ?></b>
+                    <?php } ?>
+
+                </div>
+
+                <!-- NỘI DUNG -->
+                <div>
+                    <?php
+                        echo !empty($review['comment'])
+                            ? nl2br(htmlspecialchars($review['comment']))
+                            : '<span class="text-muted">Không có nội dung</span>';
+        ?>
+                </div>
+
+            </div>
+
+        </div>
+
+    <?php } ?>
+
+<?php } ?>
 
 </div>
 </div>
