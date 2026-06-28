@@ -348,6 +348,7 @@ body{
     text-decoration: none !important;
     color: inherit;
     display: block;
+    cursor:pointer;
 }
 
 .order-status{
@@ -356,6 +357,43 @@ body{
     font-size:13px;
     font-weight:700;
     display:inline-block;
+}
+
+/* POPUP HỦY ĐƠN */
+.cancel-modal .modal-dialog{
+    max-width:550px;
+}
+
+.cancel-modal .modal-content{
+    border-radius:25px;
+    overflow:hidden;
+    border:none;
+}
+
+.cancel-modal .modal-header{
+    padding:25px;
+    border:none;
+}
+
+.cancel-modal .modal-title{
+    font-size:24px;
+    font-weight:700;
+}
+
+.cancel-modal .modal-body{
+    padding:25px 35px;
+}
+
+.cancel-modal select,
+.cancel-modal textarea{
+    border-radius:14px;
+    padding:12px;
+}
+
+.cancel-modal .modal-footer{
+    border:none;
+    justify-content:center;
+    gap:15px;
 }
 
 </style>
@@ -503,6 +541,103 @@ body{
                     <?php } ?>
 
                     <?php foreach ($orders as $order) { ?>
+                        <?php if ($order['status'] == 'pending') { ?>
+                            <div class="modal fade cancel-modal"
+                                id="cancelModal<?php echo $order['order_id']; ?>"
+                                tabindex="-1">
+
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form action="../controllers/CancelOrderController.php" method="POST">
+                                            <div class="modal-header">
+
+                                                <h5 class="modal-title text-danger">
+                                                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                                                    Hủy đơn hàng
+                                                </h5>
+
+                                                <button 
+                                                    type="button"
+                                                    class="btn-close"
+                                                    data-bs-dismiss="modal">
+                                                </button>
+                                            </div>
+
+                                            <div class="modal-body">
+                                                <input
+                                                    type="hidden"
+                                                    name="order_id"
+                                                    value="<?php echo $order['order_id']; ?>">
+                                                <p class="text-center">
+                                                    Bạn có chắc muốn hủy đơn hàng này?
+                                                </p>
+
+                                                <label class="fw-bold">
+                                                    Lý do hủy
+                                                </label>
+
+                                                <select
+                                                    name="cancel_reason"
+                                                    id="reason<?php echo $order['order_id']; ?>"
+                                                    class="form-control"
+                                                    onchange="checkReason(<?php echo $order['order_id']; ?>)"
+                                                    required>
+
+                                                    <option value="">
+                                                        -- Chọn lý do --
+                                                    </option>
+
+                                                    <option value="Đổi ý không muốn mua nữa">
+                                                        Đổi ý không muốn mua nữa
+                                                    </option>
+
+                                                    <option value="Đặt nhầm sản phẩm">
+                                                        Đặt nhầm sản phẩm
+                                                    </option>
+
+                                                    <option value="Muốn thay đổi sản phẩm">
+                                                        Muốn thay đổi sản phẩm
+                                                    </option>
+
+                                                    <option value="Thời gian giao hàng lâu">
+                                                        Thời gian giao hàng lâu
+                                                    </option>
+
+                                                    <option value="other">
+                                                        Khác
+                                                    </option>
+
+                                                </select>
+
+                                                <textarea
+                                                    name="other_reason"
+                                                    id="other<?php echo $order['order_id']; ?>"
+                                                    class="form-control mt-3"
+                                                    placeholder="Nhập lý do khác"
+                                                    style="display:none">
+                                                </textarea>
+                                            </div>
+
+                                            <div class="modal-footer">
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">
+                                                    Đóng
+                                                </button>
+
+                                                <button
+                                                    type="submit"
+                                                    class="btn btn-danger">
+                                                    Xác nhận hủy
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php } ?>
+
                         <?php
                         $statusClass = '';
                         switch ($order['status']) {
@@ -531,8 +666,7 @@ body{
                         }
                         ?>
 
-                        <a href="order_detail.php?id=<?php echo $order['order_id']; ?>"
-                        class="order-link">
+                        <div class="order-link" onclick="window.location.href='order_detail.php?id=<?php echo $order['order_id']; ?>'">
                             <div class="order-card">
                                 <div class="order-top">
                                     <div>
@@ -559,7 +693,7 @@ body{
                                     </div>
                                 </div>
 
-                                <div class="mt-2 text-end">
+                                <div class="mt-2 d-flex justify-content-between align-items-center">
                                     <span class="fw-bold text-danger fs-5">
                                         <?php
                                         echo number_format(
@@ -567,15 +701,24 @@ body{
                                             0,
                                             ',',
                                             '.'
-                                        );
-                        ?>
+                                        ); ?>
                                         đ
                                     </span>
+
+                                    <?php if ($order['status'] == 'pending') { ?>
+                                        <button
+                                            class="btn btn-danger btn-sm mt-2"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#cancelModal<?php echo $order['order_id']; ?>"
+                                            onclick="event.stopPropagation();">
+                                            Hủy đơn
+                                        </button>
+                                    <?php } ?>
                                 </div>
                             </div>
-                        </a>
+                        </div>
+                        <?php } ?>
                     <?php } ?>
-                <?php } ?>
 
                 <?php if ($tab == 'vouchers') { ?>
                     <h3 class="content-title">
@@ -801,5 +944,170 @@ body{
 <?php include 'layout/footer.php'; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- PROFILE -->
+<?php if (isset($_SESSION['profile_success'])) { ?>
+
+<div class="modal fade"
+     id="profileSuccessModal"
+     tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-body text-center p-5">
+                <i class="fa-solid fa-circle-check text-success"
+                   style="font-size:70px;"></i>
+
+                <h3 class="mt-3">
+                    Thành công
+                </h3>
+
+                <p>
+                    <?php
+                    echo $_SESSION['profile_success'];
+    unset($_SESSION['profile_success']);
+    ?>
+                </p>
+
+                <button
+                    class="btn btn-pink"
+                    data-bs-dismiss="modal">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+window.addEventListener('load', function () {
+
+    const modal = new bootstrap.Modal(
+        document.getElementById('profileSuccessModal')
+    );
+
+    modal.show();
+
+    setTimeout(function () {
+        modal.hide();
+    }, 2000);
+
+});
+</script>
+
+<?php } ?>
+
+<!-- PASSWWORD -->
+<?php if (isset($_SESSION['password_success'])) { ?>
+<div class="modal fade"
+     id="successModal"
+     tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-body text-center p-5">
+                <i class="fa-solid fa-circle-check text-success"
+                   style="font-size:70px;"></i>
+
+                <h3 class="mt-3">
+                    Thành công
+                </h3>
+
+                <p>
+                    <?php
+                        echo $_SESSION['password_success'];
+    unset($_SESSION['password_success']);
+    ?>
+                </p>
+                <button
+                    class="btn btn-pink"
+                    data-bs-dismiss="modal">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+window.addEventListener('load', function () {
+
+    const modal = new bootstrap.Modal(
+        document.getElementById('successModal')
+    );
+
+    modal.show();
+
+});
+</script>
+
+<?php } ?>
+<?php if (isset($_SESSION['cancel_success'])) { ?>
+
+<div class="modal fade"
+    id="cancelSuccessModal"
+    tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-body text-center p-5">
+                <i class="fa-solid fa-circle-check text-success"
+                    style="font-size:70px;">
+                </i>
+
+                <h3 class="mt-3">
+                    Hủy đơn thành công
+                </h3>
+
+                <p>
+                    <?php
+    echo $_SESSION['cancel_success'];
+    unset($_SESSION['cancel_success']);
+    ?>
+                </p>
+
+                <button
+                    class="btn btn-pink"
+                    data-bs-dismiss="modal">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+window.addEventListener('load', function(){
+
+    let modal = new bootstrap.Modal(
+        document.getElementById('cancelSuccessModal')
+    );
+
+    modal.show();
+});
+
+</script>
+<?php } ?>
+
+<script>
+
+function checkReason(id){
+
+    let select = document.getElementById("reason"+id);
+    let other = document.getElementById("other"+id);
+
+    if(select.value == "other"){
+        other.style.display = "block";
+        other.required = true;
+    }else{
+        other.style.display = "none";
+        other.required = false;
+    }
+
+}
+
+</script>
+
 </body>
 </html>

@@ -24,6 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         exit;
     } else {
-        echo 'Sai email hoặc mật khẩu!';
+        $_SESSION['login_error'] = 'Sai email hoặc mật khẩu!';
+        header('Location: ../views/login.php');
+        exit;
     }
 }

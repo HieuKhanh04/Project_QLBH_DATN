@@ -105,7 +105,17 @@ switch ($action) {
         $color = trim($_GET['color'] ?? '');
         $quantity = max(1, (int) ($_GET['quantity'] ?? 1));
 
-        $_SESSION['buy_now'] = [
+        $key = $id.'_'.$size.'_'.$color;
+
+        // $_SESSION['buy_now'] = [
+        //     $key => [
+        //         'product_id' => $id,
+        //         'size' => $size,
+        //         'color' => $color,
+        //         'quantity' => $quantity,
+        //     ],
+        // ];
+        $_SESSION['buy_now'][$key] = [
             'product_id' => $id,
             'size' => $size,
             'color' => $color,

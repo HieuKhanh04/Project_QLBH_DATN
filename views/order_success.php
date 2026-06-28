@@ -228,7 +228,7 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="d-flex gap-3 border-bottom py-3">
 
                             <img
-                                src="../<?php echo htmlspecialchars($item['product_image']); ?>"
+                                src="../<?php echo htmlspecialchars($item['image']); ?>"
                                 class="product-image">
 
                             <div class="flex-grow-1">

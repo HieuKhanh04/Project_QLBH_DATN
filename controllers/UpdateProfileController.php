@@ -39,5 +39,8 @@ $_SESSION['user']['email'] = $email;
 $_SESSION['user']['phone'] = $phone;
 $_SESSION['user']['address'] = $address;
 
+// Thông báo thành công
+$_SESSION['profile_success'] = 'Cập nhật thông tin thành công!';
+
 header('Location: ../views/profile.php');
 exit;

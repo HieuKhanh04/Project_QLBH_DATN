@@ -45,27 +45,26 @@ $isBuyNow = false;
 
 if (!empty($_SESSION['buy_now'])) {
     $isBuyNow = true;
-
     $buyNowItems = $_SESSION['buy_now'];
-} else {
-    $checkoutIds = $_SESSION['checkout_ids'] ?? [];
-    $cart = $_SESSION['cart'] ?? [];
-
-    if (empty($checkoutIds)) {
-        exit('Không có sản phẩm để thanh toán');
-    }
 }
-
-/* =========================
-   GIỎ HÀNG ĐƯỢC CHỌN
-========================= */
 
 $checkoutIds = $_SESSION['checkout_ids'] ?? [];
 $cart = $_SESSION['cart'] ?? [];
 
-if (empty($checkoutIds)) {
+if (!$isBuyNow && empty($checkoutIds)) {
     exit('Không có sản phẩm để thanh toán');
 }
+
+// /* =========================
+//    GIỎ HÀNG ĐƯỢC CHỌN
+// ========================= */
+
+// $checkoutIds = $_SESSION['checkout_ids'] ?? [];
+// $cart = $_SESSION['cart'] ?? [];
+
+// if (empty($checkoutIds)) {
+//     exit('Không có sản phẩm để thanh toán');
+// }
 
 $orderItems = [];
 
@@ -77,16 +76,23 @@ $totalQuantity = 0;
 ========================= */
 
 if ($isBuyNow) {
-    foreach ($buyNowItems as $item) {
-        $productId = (int) $item['product_id'];
-        $quantity = (int) $item['quantity'];
+    // // Debug
+    // echo '<pre>';
+    // print_r($buyNowItems);
+    // echo '</pre>';
+    // exit;
 
-        if ($productId <= 0 || $quantity <= 0) {
+    foreach ($buyNowItems as $key => $item) {
+        if (!is_array($item)) {
             continue;
         }
 
         $productId = (int) ($item['product_id'] ?? 0);
         $quantity = (int) ($item['quantity'] ?? 1);
+
+        if ($productId <= 0 || $quantity <= 0) {
+            continue;
+        }
 
         if ($productId <= 0 || $quantity <= 0) {
             continue;
@@ -155,7 +161,60 @@ if ($isBuyNow) {
             continue;
         }
 
-        // phần xử lý sản phẩm giữ nguyên
+        $stmtProduct = $conn->prepare('
+            SELECT *
+            FROM products
+            WHERE product_id = ?
+            LIMIT 1
+        ');
+
+        $stmtProduct->execute([$productId]);
+
+        $product = $stmtProduct->fetch(PDO::FETCH_ASSOC);
+
+        if (!$product) {
+            continue;
+        }
+
+        $price = (float) $product['price'];
+        $subtotal = $price * $quantity;
+
+        $totalPrice += $subtotal;
+        $totalQuantity += $quantity;
+
+        $stmtImage = $conn->prepare('
+            SELECT image_url
+            FROM product_images
+            WHERE product_id = ?
+            ORDER BY is_main DESC,id ASC
+            LIMIT 1
+        ');
+
+        $stmtImage->execute([$productId]);
+
+        $image = $stmtImage->fetchColumn();
+
+        if (!$image) {
+            $image = 'uploads/no-image.jpg';
+        }
+
+        $orderItems[] = [
+            'product_id' => $productId,
+
+            'name' => $product['name'],
+
+            'quantity' => $quantity,
+
+            'price' => $price,
+
+            'subtotal' => $subtotal,
+
+            'image' => $image,
+
+            'size' => $item['size'] ?? '',
+
+            'color' => $item['color'] ?? '',
+        ];
     }
 }
 
@@ -237,7 +296,7 @@ try {
             quantity,
             price,
             subtotal,
-            product_image
+            image
         )
         VALUES
         (

@@ -20,19 +20,23 @@ $total = 0;
 $checkoutProducts = [];
 
 if ($buyNow) {
-    $productId = $buyNow['product_id'];
-    $quantity = $buyNow['quantity'];
-    $size = $buyNow['size'];
-    $color = $buyNow['color'];
+    foreach ($buyNow as $cartKey => $item) {
+        $productId = (int) $item['product_id'];
+        $quantity = (int) $item['quantity'];
+        $size = $item['size'] ?? '';
+        $color = $item['color'] ?? '';
 
-    $product = $productModel->getProductById($productId);
+        $product = $productModel->getProductById($productId);
 
-    if ($product) {
+        if (!$product) {
+            continue;
+        }
+
         $stmtImage = $conn->prepare('
             SELECT image_url
             FROM product_images
             WHERE product_id = ?
-            ORDER BY is_main DESC,id ASC
+            ORDER BY is_main DESC, id ASC
             LIMIT 1
         ');
 
@@ -51,7 +55,7 @@ if ($buyNow) {
         $total += $subtotal;
 
         $checkoutProducts[] = [
-            'cart_key' => 'buy_now',
+            'cart_key' => $cartKey,
             'product_id' => $productId,
             'name' => $product['name'],
             'price' => $product['price'],
@@ -304,6 +308,40 @@ if ($buyNow) {
             text-align:center;
             font-weight:700;
         }
+
+        .voucher-card{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:12px;
+            border:1px solid #eee;
+            border-radius:12px;
+            margin-bottom:10px;
+            cursor:pointer;
+            transition:.2s;
+            background:#fff;
+        }
+
+        .voucher-card:hover{
+            border-color:#ff4fa3;
+            background:#fff0f7;
+        }
+
+        .voucher-code{
+            font-weight:700;
+            color:#ff4fa3;
+        }
+
+        .voucher-desc{
+            font-size:13px;
+            color:#666;
+        }
+
+        .voucher-right{
+            font-size:12px;
+            color:#ff4fa3;
+            font-weight:600;
+        }
         
     </style>
 
@@ -429,16 +467,6 @@ if ($buyNow) {
 
 <div id="addressList" class="list-group">
 </div>
-
-        <div
-            id="addressList"
-            class="list-group"
-            style="
-                max-height:300px;
-                overflow-y:auto;
-            ">
-            <!-- Đang tải dữ liệu... -->
-        </div>
 
         <div
             id="selectedAddress"
@@ -628,14 +656,110 @@ if ($buyNow) {
 
             <?php } ?>
 
+            <div class="mt-3 mb-3 p-3 border rounded-4 bg-light">
+                <label class="form-label fw-bold">
+                    Mã giảm giá
+                </label>
+
+                <!-- INPUT + APPLY -->
+                <div class="input-group">
+                    <input type="text"
+                        id="voucherInput"
+                        class="form-control"
+                        placeholder="Nhập mã voucher">
+
+                    <button type="button"
+                            class="btn btn-pink"
+                            onclick="applyVoucher()">
+                        Áp dụng
+                    </button>
+                </div>
+
+            <!-- TOGGLE LIST -->
+            <div class="mt-2 d-flex justify-content-between align-items-center">
+
+                <small class="text-muted">
+                    Hoặc chọn voucher của bạn
+                </small>
+
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        onclick="toggleVoucherList()">
+                    Xem voucher
+                </button>
+            </div>
+
+    <!-- VOUCHER LIST -->
+    <div id="voucherList"
+         class="mt-3"
+         style="display:none; max-height:220px; overflow:auto;">
+
+        <?php if (!empty($vouchers)) { ?>
+            <?php foreach ($vouchers as $v) { ?>
+                <div class="voucher-card"
+                     onclick="selectVoucher('<?php echo $v['code']; ?>')">
+
+                    <div class="voucher-left">
+                        <div class="voucher-code">
+                            <?php echo $v['code']; ?>
+                        </div>
+
+                        <div class="voucher-desc">
+                            <?php if ($v['discount_type'] == 'percent') { ?>
+                                Giảm <?php echo $v['discount_value']; ?>%
+                            <?php } else { ?>
+                                Giảm <?php echo number_format($v['discount_value']); ?>₫
+                            <?php } ?>
+                        </div>
+                    </div>
+
+                    <div class="voucher-right">
+                        <span>Chọn</span>
+                    </div>
+
+                </div>
+
+            <?php } ?>
+
+            <?php } else { ?>
+                <div class="text-muted small">Không có voucher khả dụng</div>
+            <?php } ?>
+
+            </div>
+
+            <!-- ACTIVE VOUCHER -->
+            <div id="activeVoucher"
+                class="mt-3 p-2 rounded-3 border"
+                style="display:none; background:#fff0f7;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong id="activeVoucherCode"></strong>
+                        <div class="small text-muted">Đang áp dụng</div>
+                    </div>
+
+                    <button class="btn btn-sm btn-outline-danger"
+                            onclick="removeVoucher()">
+                        Huỷ
+                    </button>
+                </div>
+            </div>
+        </div>
+
             <div class="d-flex justify-content-between mb-2">
 
-                <span>Tạm tính</span>
+                <span>Tiền hàng</span>
 
                 <span id="productTotal">
                     <?php echo number_format($total); ?>₫
                 </span>
 
+            </div>
+
+            <div class="d-flex justify-content-between mb-2">
+                <span>Giảm giá</span>
+                <span class="text-success" id="discountValue">
+                    0₫
+                </span>
             </div>
 
             <div class="d-flex justify-content-between mb-2">
@@ -978,65 +1102,40 @@ document
 
 });
 
-document
-.querySelectorAll('.increase-btn')
-.forEach(btn => {
+document.addEventListener('click', function(e) {
 
-    btn.addEventListener('click', function(){
+    let inc = e.target.closest('.increase-btn');
+    let dec = e.target.closest('.decrease-btn');
 
-        updateQuantity(
-            this.dataset.cartKey,
-            'increase'
-        );
-    });
+    if (inc) {
+        updateQuantity(inc.dataset.cartKey, 'increase');
+    }
 
-});
-
-document
-.querySelectorAll('.decrease-btn')
-.forEach(btn => {
-
-    btn.addEventListener('click', function(){
-
-        updateQuantity(
-            this.dataset.cartKey,
-            'decrease'
-        );
-    });
-
+    if (dec) {
+        updateQuantity(dec.dataset.cartKey, 'decrease');
+    }
 });
 
 function updateQuantity(cartKey, action)
 {
-    fetch(
-        '../controllers/update_checkout_quantity.php',
-        {
-            method:'POST',
-            headers:{
-                'Content-Type':
-                'application/x-www-form-urlencoded'
-            },
-            body:
-                'cart_key=' + cartKey +
-                '&action=' + action
-        }
-    )
-    .then(response => response.json())
+    fetch('../controllers/update_checkout_quantity.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'cart_key=' + cartKey + '&action=' + action
+    })
+    .then(r => r.json())
     .then(data => {
 
-        if(!data.success){
-            return;
-        }
+        if (!data.success) return;
 
-        document.getElementById(
-            'qty-' + cartKey
-        ).innerText = data.quantity;
+        document.getElementById('qty-' + cartKey).innerText = data.quantity;
 
-        document.getElementById(
-            'subtotal-' + cartKey
-        ).innerText =
-            Number(data.subtotal).toLocaleString()
-            + '₫';
+        document.getElementById('subtotal-' + cartKey).innerText =
+            Number(data.subtotal).toLocaleString() + '₫';
+
+        // QUAN TRỌNG
+        document.getElementById('subtotal-' + cartKey)
+            .dataset.value = data.subtotal;
 
         recalculateTotal();
     });
@@ -1046,44 +1145,128 @@ function recalculateTotal()
 {
     let total = 0;
 
-    document
-    .querySelectorAll('[id^="subtotal-"]')
-    .forEach(item => {
-
-        let value =
-            item.innerText
-            .replaceAll('.', '')
-            .replaceAll(',', '')
-            .replace('₫','')
-            .trim();
-
-        total += parseInt(value) || 0;
+    document.querySelectorAll('[id^="subtotal-"]').forEach(item => {
+        total += parseInt(item.dataset.value || 0);
     });
 
-    document.getElementById(
-        'productTotal'
-    ).innerText =
+    let shipping = parseInt(
+        document.getElementById('shippingFee')
+        .innerText.replace(/[^\d]/g,'')
+    ) || 0;
+
+    let final = total + shipping - discountAmount;
+
+    if (final < 0) final = 0;
+
+    document.getElementById('productTotal').innerText =
         total.toLocaleString() + '₫';
 
-    let shipping = 0;
+    document.getElementById('discountText').innerText =
+        '-' + discountAmount.toLocaleString() + '₫';
 
-    let shippingText =
-        document.getElementById('shippingFee')
-        .innerText;
+    document.getElementById('finalTotal').innerText =
+        final.toLocaleString() + '₫';
+}
 
-    shipping =
-        parseInt(
-            shippingText
-            .replaceAll('.', '')
-            .replaceAll(',', '')
-            .replace('₫','')
-        ) || 0;
+let discountAmount = 0;
+let appliedVoucher = null;
 
-    document.getElementById(
-        'finalTotal'
-    ).innerText =
-        (total + shipping).toLocaleString()
-        + '₫';
+/* TOGGLE LIST */
+function toggleVoucherList() {
+    let el = document.getElementById('voucherList');
+    el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+}
+
+/* CLICK SELECT */
+function selectVoucher(code) {
+    document.getElementById('voucherInput').value = code;
+    applyVoucher();
+}
+
+/* APPLY VOUCHER */
+function applyVoucher() {
+
+    let code = document.getElementById('voucherInput').value.trim();
+    if (!code) return;
+
+    fetch('../controllers/apply_voucher.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'code=' + code
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (!data.success) {
+            alert(data.message);
+            return;
+        }
+
+        discountAmount = parseInt(data.discount || 0);
+        appliedVoucher = data.voucher;
+
+        // UI active voucher
+        document.getElementById('activeVoucher').style.display = 'block';
+        document.getElementById('activeVoucherCode').innerText = code;
+
+        recalculateTotal();
+    });
+}
+
+/* REMOVE VOUCHER */
+function removeVoucher() {
+
+    discountAmount = 0;
+    appliedVoucher = null;
+
+    document.getElementById('voucherInput').value = '';
+    document.getElementById('activeVoucher').style.display = 'none';
+
+    recalculateTotal();
+}
+
+let discount = 0;
+
+function applyDiscount(type, value)
+{
+    let productTotal =
+        parseInt(document.getElementById('productTotal')
+        .innerText.replace(/[^\d]/g, '')) || 0;
+
+    let shipping =
+        parseInt(document.getElementById('shippingFee')
+        .innerText.replace(/[^\d]/g, '')) || 0;
+
+    if (type === 'percent') {
+        discount = productTotal * value / 100;
+    }
+
+    if (type === 'fixed') {
+        discount = value;
+    }
+
+    document.getElementById('discountValue').innerText =
+        '-' + discount.toLocaleString() + '₫';
+
+    updateFinalTotal();
+}
+
+function updateFinalTotal()
+{
+    let productTotal = 0;
+
+    document.querySelectorAll('[id^="subtotal-"]').forEach(el => {
+        productTotal += parseInt(el.innerText.replace(/[^\d]/g, '')) || 0;
+    });
+
+    let shipping =
+        parseInt(document.getElementById('shippingFee')
+        .innerText.replace(/[^\d]/g, '')) || 0;
+
+    let finalTotal = productTotal + shipping - discount;
+
+    document.getElementById('finalTotal').innerText =
+        finalTotal.toLocaleString() + '₫';
 }
 
 </script>

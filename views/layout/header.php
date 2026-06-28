@@ -1,4 +1,9 @@
 <?php
+if (!isset($conn)) {
+    require_once __DIR__.'/../../config/database.php';
+}
+?>
+<?php
 $count = 0;
 
 if (!empty($_SESSION['cart']) && is_array($_SESSION['cart'])) {

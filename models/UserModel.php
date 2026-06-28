@@ -32,10 +32,36 @@ class UserModel
     }
 
     // LOGIN
+    // public function login($email, $password)
+    // {
+    //     $sql = 'SELECT * FROM users
+    //             WHERE email = :email';
+
+    //     $stmt = $this->conn->prepare($sql);
+
+    //     $stmt->bindParam(':email', $email);
+
+    //     $stmt->execute();
+
+    //     $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    //     if (
+    //         $user
+    //         && password_verify(
+    //             $password,
+    //             $user['password']
+    //         )
+    //     ) {
+    //         return $user;
+    //     }
+
+    //     return false;
+    // }
+
     public function login($email, $password)
     {
-        $sql = 'SELECT * FROM users 
-                WHERE email = :email 
+        $sql = 'SELECT * FROM users
+                WHERE email = :email
                 AND password = :password';
 
         $stmt = $this->conn->prepare($sql);

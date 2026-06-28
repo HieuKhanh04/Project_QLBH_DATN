@@ -1,3 +1,13 @@
+<?php
+session_start();
+
+$error = '';
+
+if (isset($_SESSION['login_error'])) {
+    $error = $_SESSION['login_error'];
+    unset($_SESSION['login_error']);
+}
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -114,6 +124,68 @@
         backdrop-filter: blur(4px);
         z-index: 0;
     }
+
+    /* POPUP ERROR */
+    .error-modal{
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.35);
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        z-index:9999;
+    }
+
+    .error-box{
+        width:350px;
+        background:#fff;
+        border-radius:18px;
+        padding:30px;
+        text-align:center;
+        box-shadow:0 10px 30px rgba(0,0,0,.15);
+        animation:popupShow .25s ease;
+    }
+
+    .error-box i{
+        font-size:55px;
+        color:#e05297;
+        margin-bottom:15px;
+    }
+
+    .error-box h4{
+        color:#e05297;
+        margin-bottom:10px;
+    }
+
+    .error-box p{
+        color:#555;
+        margin-bottom:20px;
+    }
+
+    .error-btn{
+        background:#e05297;
+        color:#fff;
+        border:none;
+        padding:10px 25px;
+        border-radius:10px;
+        cursor:pointer;
+        font-weight:bold;
+    }
+
+    .error-btn:hover{
+        background:#d13d84;
+    }
+
+    @keyframes popupShow{
+        from{
+            opacity:0;
+            transform:scale(.8);
+        }
+        to{
+            opacity:1;
+            transform:scale(1);
+        }
+    }
     
 </style>
 </head>
@@ -163,6 +235,31 @@
             icon.classList.add("fa-eye");
         }
     }
+    </script>
+
+    <?php if (!empty($error)) { ?>
+    <div class="error-modal" id="errorModal">
+
+        <div class="error-box">
+
+            <i class="fa-solid fa-circle-exclamation"></i>
+
+            <h4>Đăng nhập thất bại</h4>
+
+            <p><?php echo htmlspecialchars($error); ?></p>
+
+            <button class="error-btn"
+                    onclick="closeErrorModal()">
+                OK
+            </button>
+        </div>
+    </div>
+    <?php } ?>
+
+    <script>
+        function closeErrorModal(){
+            document.getElementById('errorModal').style.display = 'none';
+        }
     </script>
 
 </body>

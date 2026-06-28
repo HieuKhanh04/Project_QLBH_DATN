@@ -1,9 +1,11 @@
 <?php
 session_start();
 
+require_once '../config/database.php';
+
 $count = 0;
 if (isset($_SESSION['cart'])) {
-    $count = array_sum($_SESSION['cart']);
+    $count = array_sum(array_column($_SESSION['cart'], 'quantity'));
 }
 ?>
 
