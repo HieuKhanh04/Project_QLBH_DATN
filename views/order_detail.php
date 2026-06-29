@@ -54,21 +54,39 @@ function statusBadge($status)
     switch ($status) {
         case 'pending':
             return 'warning';
-
-        case 'processing':
+        case 'confirmed':
             return 'info';
-
         case 'shipping':
             return 'primary';
-
         case 'delivered':
             return 'success';
-
         case 'cancelled':
             return 'danger';
-
         default:
             return 'secondary';
+    }
+}
+
+function statusText($status)
+{
+    switch ($status) {
+        case 'pending':
+            return 'Chờ xác nhận';
+
+        case 'confirmed':
+            return 'Đã xác nhận';
+
+        case 'shipping':
+            return 'Đang giao';
+
+        case 'delivered':
+            return 'Đã giao';
+
+        case 'cancelled':
+            return 'Đã hủy';
+
+        default:
+            return 'Không xác định';
     }
 }
 ?>
@@ -181,7 +199,7 @@ body{
 
         <div class="d-flex flex-wrap align-items-center gap-2">
             <span class="badge bg-<?php echo statusBadge($order['status']); ?>">
-                <?php echo strtoupper($order['status']); ?>
+                <?php echo statusText($order['status']); ?>
             </span>
 
             <?php if ($order['status'] == 'pending') { ?>
@@ -650,6 +668,7 @@ function showOtherReason(){
             },2000);
         }
     });
+
 </script>
 <?php } ?>
 

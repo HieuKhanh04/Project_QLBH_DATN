@@ -14,9 +14,7 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $category_id = $_GET['category'] ?? 0;
 
 if ($category_id > 0) {
-    $stmt = $conn->prepare('SELECT * FROM products WHERE category_id = ?');
-    $stmt->execute([$category_id]);
-    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $products = $productModel->getProductsByCategory($category_id);
 } else {
     $products = $productModel->getAllProducts();
 }
@@ -314,6 +312,7 @@ input[type=number] {
                                 data-id="<?php echo $p['product_id']; ?>"
                                 data-name="<?php echo htmlspecialchars($p['name']); ?>"
                                 data-price="<?php echo $p['price']; ?>"
+                                data-stock="<?php echo $p['total_quantity']; ?>"
                                 data-image="https://picsum.photos/500/600?random=<?php echo $p['product_id']; ?>"
                                 data-has-variant="<?php echo $productModel->hasVariant($p['product_id']) ? 1 : 0; ?>"
                                 data-sizes='<?php echo json_encode(array_values($sizes)); ?>'
@@ -454,6 +453,14 @@ function openCartModal(btn){
 
     document.getElementById('modalStatus').innerHTML =
         '<span class="text-success">Còn hàng</span>';
+    let stock = parseInt(btn.dataset.stock);
+    if(stock > 0){
+        document.getElementById('modalStatus').innerHTML =
+            '<span class="text-success">Còn hàng (' + stock + ')</span>';
+    }else{
+        document.getElementById('modalStatus').innerHTML =
+            '<span class="text-danger">Hết hàng</span>';
+    }
     
     document.getElementById('modalDetailLink').href =
         'product_detail.php?id=' + btn.dataset.id;

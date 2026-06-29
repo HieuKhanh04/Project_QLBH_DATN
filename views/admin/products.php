@@ -16,21 +16,26 @@ if (isset($_POST['add_product'])) {
     $color = $_POST['color'];
     $quantity = $_POST['quantity'];
 
-    $image = $_POST['image'];
+    $image = $_FILES['image']['name'];
+    $tmp = $_FILES['image']['tmp_name'];
+    $uploadPath = '../../uploads/products/'.$image;
+    move_uploaded_file(
+        $tmp,
+        $uploadPath
+    );
 
     $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name)));
 
     /* PRODUCTS */
     $stmt = $conn->prepare('
         INSERT INTO products
-        (name, slug, price, description, category_id, status)
-        VALUES (?, ?, ?, ?, ?, 1)
+        (name, slug, description, category_id, status)
+        VALUES (?, ?, ?, ?, 1)
     ');
 
     $stmt->execute([
         $name,
         $slug,
-        $price,
         $description,
         $category_id,
     ]);
@@ -72,7 +77,16 @@ if (isset($_POST['add_product'])) {
 $keyword = $_GET['keyword'] ?? '';
 
 if ($keyword != '') {
-    $stmt = $conn->prepare('SELECT * FROM products WHERE name LIKE ?');
+    $stmt = $conn->prepare('
+        SELECT
+            p.*,
+            COALESCE(SUM(v.quantity),0) AS total_quantity
+        FROM products p
+        LEFT JOIN product_variants v
+            ON p.product_id = v.product_id
+        WHERE p.name LIKE ?
+        GROUP BY p.product_id
+        ');
     $stmt->execute(["%$keyword%"]);
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
@@ -227,7 +241,7 @@ body{
     border-radius:50%;
 }
 
-/* ================= ACTION ================= */
+/* ACTION */
 .header-action{
     display:flex;
     justify-content:space-between;
@@ -405,6 +419,14 @@ textarea{
     cursor:pointer;
 }
 
+.form-control{
+    width:100%;
+    padding:14px;
+    border:1px solid #eee;
+    border-radius:12px;
+    outline:none;
+}
+
 </style>
 
 </head>
@@ -459,7 +481,7 @@ textarea{
                 <div class="menu-title">
                     QUẢN LÝ NỘI DUNG
                 </div>  
-                <a href="#" class="sidebar-item">
+                <a href="categories.php" class="sidebar-item">
                     <i class="fa-regular fa-folder"></i>
                     Danh mục
                 </a>
@@ -547,7 +569,6 @@ textarea{
             <tr>
                 <th>Sản phẩm</th>
                 <th>Danh mục</th>
-                <th>Giá</th>
                 <th>Tồn kho</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
@@ -569,11 +590,17 @@ textarea{
 
                 <td><?php echo $product['category_id']; ?></td>
 
-                <td><?php echo number_format($product['price']); ?>đ</td>
+                <td><?php echo $product['total_quantity']; ?></td>
 
-                <td>20</td>
-
-                <td><span class="stock instock">Còn hàng</span></td>
+                <td>
+                    <?php if ($product['total_quantity'] > 0) { ?>
+                        <span class="stock instock">Còn hàng</span>
+                    <?php } else { ?>
+                        <span class="stock" style="background:#ffe5e5;color:#d60000;">
+                            Hết hàng
+                        </span>
+                    <?php } ?>
+                    </td>
 
                 <td>
                     <div class="action-btns">
@@ -594,6 +621,7 @@ textarea{
                         </a>
 
                     </div>
+
                 </td>
 
             </tr>
@@ -601,7 +629,7 @@ textarea{
             <?php } ?>
 
         </table>
-
+        
     </div>
 
 </div>
@@ -611,7 +639,10 @@ textarea{
     <div id="productModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Thêm sản phẩm</h2>
+                <h2>
+                    <i class="fa fa-plus"></i>
+                    Thêm sản phẩm
+                </h2>
 
                 <span class="close-btn"
                     onclick="closeModal()">
@@ -619,64 +650,115 @@ textarea{
                 </span>
             </div>
 
-            <form method="POST">
-
+            <form method="POST" enctype="multipart/form-data">
                 <div class="form-grid">
+                    <!-- TÊN -->
+                    <div>
+                        <label>Tên sản phẩm</label>
+                        <input
+                            type="text"
+                            name="name"
+                            placeholder="Nhập tên sản phẩm"
+                            required>
+                    </div>
 
-                    <input
-                        type="text"
-                        name="name"
-                        placeholder="Tên sản phẩm"
-                        required>
+                    <!-- GIÁ -->
+                    <div>
+                        <label>Giá sản phẩm</label>
+                        <input
+                            type="number"
+                            name="price"
+                            placeholder="VD: 500000"
+                            required>
+                    </div>
 
-                    <input
-                        type="number"
-                        name="price"
-                        placeholder="Giá"
-                        required>
+                    <!-- CATEGORY -->
+                    <div>
+                        <label>Danh mục</label>
+                        <select
+                            name="category_id"
+                            required
+                            class="form-control">
+                            <option value="">
+                                -- Chọn danh mục --
+                            </option>
 
-                    <input
-                        type="number"
-                        name="category_id"
-                        placeholder="ID Danh mục"
-                        required>
+                            <?php
+                            $cats = $conn->query(
+                                'SELECT * FROM categories'
+                            )->fetchAll(PDO::FETCH_ASSOC);
+foreach ($cats as $cat) {
+    ?>
+                            <option value="<?php echo $cat['category_id']; ?>">
+                                <?php echo $cat['name']; ?>
+                            </option>
+                            <?php } ?>
+                        </select>
+                    </div>
 
-                    <input
-                        type="text"
-                        name="size"
-                        placeholder="Size (M,L,XL)"
-                        required>
+                    <!-- SIZE -->
+                    <div>
+                        <label>Kích thước</label>
+                        <input
+                            type="text"
+                            name="size"
+                            placeholder="M, L, XL"
+                            required>
+                    </div>
 
-                    <input
-                        type="text"
-                        name="color"
-                        placeholder="Màu sắc"
-                        required>
+                    <!-- COLOR -->
+                    <div>
+                        <label>Màu sắc</label>
+                        <input
+                            type="text"
+                            name="color"
+                            placeholder="Đen, Trắng..."
+                            required>
+                    </div>
 
-                    <input
-                        type="number"
-                        name="quantity"
-                        placeholder="Số lượng"
-                        required>
-
-                    <input
-                        type="text"
-                        name="image"
-                        placeholder="URL ảnh"
-                        required>
-
+                    <!-- QUANTITY -->
+                    <div>
+                        <label>Số lượng</label>
+                        <input
+                            type="number"
+                            name="quantity"
+                            min="0"
+                            required>
+                    </div>
                 </div>
 
-                <textarea
-                    name="description"
-                    placeholder="Mô tả sản phẩm"
-                    rows="4"></textarea>
+                <!-- IMAGE -->
+                <div class="mb-3">
+                    <label>
+                        Ảnh sản phẩm
+                    </label>
+
+                    <input
+                        type="file"
+                        name="image"
+                        accept="image/*"
+                        class="form-control"
+                        required>
+                </div>
+
+                <!-- DESCRIPTION -->
+                <div>
+                    <label>
+                        Mô tả
+                    </label>
+
+                    <textarea
+                        name="description"
+                        rows="4"
+                        placeholder="Mô tả sản phẩm..."
+                        required></textarea>
+                </div>
 
                 <button
                     type="submit"
                     name="add_product"
                     class="save-btn">
-
+                    <i class="fa fa-save"></i>
                     Lưu sản phẩm
                 </button>
             </form>

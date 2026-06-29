@@ -1,6 +1,39 @@
 <?php
 require_once '../../config/database.php';
 
+/* XÁC NHẬN ĐƠN HÀNG */
+if (isset($_GET['confirm'])) {
+    $id = (int) $_GET['confirm'];
+
+    $stmt = $conn->prepare("
+        UPDATE orders
+        SET status = 'confirmed'
+        WHERE order_id = ?
+    ");
+
+    $stmt->execute([$id]);
+
+    header('Location: orders.php?confirm_success=1');
+    exit;
+}
+
+/* HỦY ĐƠN HÀNG */
+if (isset($_GET['cancel'])) {
+    $id = (int) $_GET['cancel'];
+
+    $stmt = $conn->prepare("
+        UPDATE orders
+        SET
+            status='cancelled',
+            cancelled_by='Admin'
+        WHERE order_id=?
+    ");
+    $stmt->execute([$id]);
+
+    header('Location: orders.php?cancel_success=1');
+    exit;
+}
+
 /* LẤY ĐƠN HÀNG */
 $stmt = $conn->query('
     SELECT *
@@ -159,7 +192,16 @@ body{
 table{
     width:100%;
     border-collapse:collapse;
+    table-layout:fixed;
 }
+
+th:nth-child(1){width:90px;}
+th:nth-child(2){width:180px;}
+th:nth-child(3){width:150px;}
+th:nth-child(4){width:220px;}
+th:nth-child(5){width:160px;}
+th:nth-child(6){width:150px;}
+th:nth-child(7){width:230px;}
 
 table th{
     text-align:left;
@@ -172,18 +214,129 @@ table td{
     border-top:1px solid #f3f3f3;
 }
 
-/* STATUS */
+/* ===== STATUS ===== */
+
 .status{
+    display:inline-block;
+    min-width:120px;
+    text-align:center;
     padding:8px 14px;
     border-radius:30px;
     font-size:13px;
     font-weight:bold;
+    line-height:1.4;
 }
 
-.processing{ background:#fff0d9; color:#ff9800; }
-.shipping{ background:#e7f1ff; color:#2196f3; }
-.success{ background:#e4fff0; color:#23b26d; }
-.cancel{ background:#ffe4e4; color:#ff4d4d; }
+/* Chờ xác nhận */
+.pending{
+    background:#fff4d6;
+    color:#d48806;
+}
+
+/* Đã xác nhận */
+.confirmed{
+    background:#e6f4ff;
+    color:#1677ff;
+}
+
+/* Đang giao */
+.shipping{
+    background:#f3e8ff;
+    color:#7b2cbf;
+}
+
+/* Đã giao */
+.delivered{
+    background:#e8f8ef;
+    color:#16a34a;
+}
+
+/* Đã hủy */
+.cancelled{
+    background:#ffe5e5;
+    color:#dc2626;
+}
+
+/* MODAL */
+.modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,.4);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+}
+
+.modal-content{
+    width:430px;
+    background:white;
+    border-radius:24px;
+    padding:30px;
+}
+
+.modal-header{
+    text-align:center;
+}
+
+.modal-header h2{
+    margin-top:10px;
+}
+
+.warning-icon{
+    font-size:55px;
+    color:#ffb400;
+}
+
+.modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:12px;
+    margin-top:25px;
+}
+
+.cancel-btn{
+    background:#eee;
+    color:#333;
+    border:none;
+    padding:12px 22px;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.confirm-btn{
+    background:#28a745;
+    color:white;
+    border:none;
+    padding:8px 12px;
+    font-size:13px;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.confirm-btn:hover{
+    background:#208637;
+}
+
+.cancel-order-btn{
+    background:#dc3545;
+    color:#fff;
+    border:none;
+    padding:8px 12px;
+    font-size:13px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.cancel-order-btn:hover{
+    background:#bb2d3b;
+}
 
 </style>
 
@@ -195,7 +348,6 @@ table td{
 
 <!-- SIDEBAR (GIỮ NGUYÊN 100% TỪ PRODUCTS.PHP) -->
 <div class="sidebar">
-
     <a href="admin_dashboard.php" class="logo">
         HAN STORE
     </a>
@@ -237,7 +389,7 @@ table td{
 
             <div class="menu-title">QUẢN LÝ NỘI DUNG</div>
 
-            <a href="#">
+            <a href="categories.php">
                 <i class="fa-regular fa-folder"></i>
                 Danh mục
             </a>
@@ -289,6 +441,7 @@ table td{
             <p>Theo dõi toàn bộ đơn hàng cửa hàng</p>
         </div>
 
+        <!-- ADMIN ACCOUNT -->
         <div class="admin-box">
             <img src="https://img.magnific.com/free-vector/smiling-woman-with-glasses_1308-177859.jpg?semt=ais_hybrid&w=740&q=80">
             <div>
@@ -313,6 +466,7 @@ table td{
                 <th>Ngày</th>
                 <th>Trạng thái</th>
                 <th>Tổng tiền</th>
+                <th>Thao tác</th>
             </tr>
 
             <?php foreach ($orders as $o) { ?>
@@ -328,15 +482,47 @@ table td{
                     <?php
                         $status = $o['status'];
                 $class = match ($status) {
-                    'pending' => 'processing',
+                    'pending' => 'pending',
+                    'confirmed' => 'confirmed',
                     'shipping' => 'shipping',
-                    'done' => 'success',
-                    default => 'cancel'
-                };
-                ?>
+                    'delivered' => 'delivered',
+                    'cancelled' => 'cancelled',
+                    default => 'pending'
+                }; ?>
 
                     <span class="status <?php echo $class; ?>">
-                        <?php echo $status; ?>
+                        <?php
+                switch ($status) {
+                    case 'pending':
+                        echo 'Chờ xác nhận';
+                        break;
+
+                    case 'confirmed':
+                        echo 'Đã xác nhận';
+                        break;
+
+                    case 'shipping':
+                        echo 'Đang giao';
+                        break;
+
+                    case 'delivered':
+                        echo 'Đã giao';
+                        break;
+
+                    case 'cancelled':
+                        echo 'Đã hủy';
+
+                        if (!empty($o['cancelled_by'])) {
+                            echo "<br><small style='display:block;margin-top:4px;font-size:11px;color:#666'>
+                            Hủy bởi: {$o['cancelled_by']}
+                            </small>";
+                        }
+
+                        break;
+                    default:
+                        echo $status;
+                }
+                ?>
                     </span>
                 </td>
 
@@ -344,17 +530,196 @@ table td{
                     <?php echo number_format($o['total_price']); ?> đ
                 </td>
 
+                <td>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <a href="order_detail.php?id=<?php echo $o['order_id']; ?>">
+                            <button
+                                style="
+                                    background:#0d6efd;
+                                    color:#fff;
+                                    border:none;
+                                    padding:10px 18px;
+                                    border-radius:10px;
+                                    cursor:pointer;
+                                    font-weight:bold;
+                                ">
+                                Xem
+                            </button>
+                        </a>
+
+                        <?php if ($o['status'] == 'pending') { ?>
+                            <button
+                                class="confirm-btn"
+                                onclick="openConfirmModal(<?php echo $o['order_id']; ?>)">
+                                Xác nhận
+                            </button>
+
+                            <button
+                                class="cancel-order-btn"
+                                onclick="openCancelModal(<?php echo $o['order_id']; ?>)">
+                                Hủy
+                            </button>
+                        <?php } ?>
+                    </div>
+                </td>
             </tr>
-
-            <?php } ?>
-
+        <?php } ?>
         </table>
+    </div>
+</div>
+
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="warning-icon">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+
+            <h2>Xác nhận đơn hàng</h2>
+
+            <p style="margin-top:15px;color:#666;">
+                Bạn có chắc muốn xác nhận đơn hàng này?
+            </p>
+
+        </div>
+
+        <div class="modal-actions">
+
+            <button
+                class="cancel-btn"
+                onclick="closeConfirmModal()">
+                Hủy
+            </button>
+
+            <a id="confirmLink" href="">
+                <button class="confirm-btn">
+                    Xác nhận
+                </button>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div id="cancelModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="warning-icon" style="color:#dc3545">
+                <i class="fa-solid fa-circle-xmark"></i>
+            </div>
+
+            <h2>Hủy đơn hàng</h2>
+
+            <p style="margin-top:15px;color:#666">
+                Bạn có chắc muốn hủy đơn hàng này?
+            </p>
+
+        </div>
+
+        <div class="modal-actions">
+            <button
+                class="cancel-btn"
+                onclick="closeCancelModal()">
+                Đóng
+            </button>
+
+            <a id="cancelLink" href="">
+                <button class="cancel-order-btn">
+                    Hủy đơn
+                </button>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div id="successModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="warning-icon" style="color:#28a745">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+
+            <h2>Thành công</h2>
+
+            <p id="successMessage" style="margin-top:15px;color:#666;"></p>
+
+        </div>
+
+        <div class="modal-actions">
+            <button
+                class="confirm-btn"
+                style="background:#28a745"
+                onclick="closeSuccessModal()">
+                OK
+            </button>
+        </div>
 
     </div>
-
 </div>
 
-</div>
+<script>
+    function openConfirmModal(orderId){
+        document.getElementById("confirmLink").href =
+            "?confirm=" + orderId;
+
+        document.getElementById("confirmModal").style.display = "flex";
+    }
+
+    function closeConfirmModal(){
+        document.getElementById("confirmModal").style.display = "none";
+    }
+
+    function openCancelModal(orderId){
+        document.getElementById("cancelLink").href =
+            "?cancel=" + orderId;
+
+        document.getElementById("cancelModal").style.display = "flex";
+    }
+
+    function closeCancelModal(){
+        document.getElementById("cancelModal").style.display = "none";
+    }
+
+    function closeSuccessModal(){
+        document.getElementById("successModal").style.display = "none";
+        history.replaceState({}, "", "orders.php");
+    }
+
+    window.onclick = function(e){
+
+        if(e.target == document.getElementById("confirmModal")){
+            closeConfirmModal();
+        }
+
+        if(e.target == document.getElementById("cancelModal")){
+            closeCancelModal();
+        }
+
+        if(e.target == document.getElementById("successModal")){
+            closeSuccessModal();
+        }
+    };
+
+    window.onload = function(){
+        <?php if (isset($_GET['confirm_success'])) { ?>
+
+            document.getElementById("successMessage").textContent =
+                "Đơn hàng đã được xác nhận thành công.";
+
+            document.getElementById("successModal").style.display = "flex";
+
+        <?php } ?>
+
+        <?php if (isset($_GET['cancel_success'])) { ?>
+
+            document.getElementById("successMessage").textContent =
+                "Đơn hàng đã được hủy thành công.";
+
+            document.getElementById("successModal").style.display = "flex";
+
+        <?php } ?>
+    };
+
+</script>
 
 </body>
 </html>

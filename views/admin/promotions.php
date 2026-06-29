@@ -1,7 +1,85 @@
 <?php
 require_once '../../config/database.php';
 
-/* LẤY KHUYẾN MÃI */
+/* THÊM */
+
+if (isset($_POST['addPromotion'])) {
+    $stmt = $conn->prepare('
+        INSERT INTO promotions(
+            code,
+            discount_type,
+            discount_value,
+            quantity,
+            used_count,
+            start_date,
+            end_date,
+            status)
+        VALUES(?,?,?,?,?,?,?,?)
+    ');
+
+    $status = 'active';
+
+    $stmt->execute([
+        $_POST['code'],
+        $_POST['discount_type'],
+        $_POST['discount_value'],
+        $_POST['quantity'],
+        0,
+        $_POST['start_date'],
+        $_POST['end_date'],
+        $status,
+    ]);
+
+    header(
+        'Location: promotions.php?success=Thêm'
+    );
+
+    exit;
+}
+
+/* SỬA */
+
+if (isset($_POST['updatePromotion'])) {
+    $stmt = $conn->prepare('
+        UPDATE promotions SET
+            code=?,
+            discount_type=?,
+            discount_value=?,
+            quantity=?,
+            start_date=?,
+            end_date=?
+        WHERE promotion_id=?
+    ');
+
+    $stmt->execute([
+        $_POST['code'],
+        $_POST['discount_type'],
+        $_POST['discount_value'],
+        $_POST['quantity'],
+        $_POST['start_date'],
+        $_POST['end_date'],
+        $_POST['promotion_id'],
+    ]);
+    header('Location: promotions.php?success=Sửa');
+    exit;
+}
+
+/* XÓA */
+if (isset($_POST['deletePromotion'])) {
+    $stmt = $conn->prepare('
+        DELETE FROM promotions
+        WHERE promotion_id=?
+    ');
+
+    $stmt->execute([
+        $_POST['delete_id'],
+    ]);
+
+    header('Location: promotions.php?success=Xóa');
+    exit;
+}
+
+/* LẤY DỮ LIỆU */
 $stmt = $conn->query('
     SELECT *
     FROM promotions
@@ -192,38 +270,99 @@ table td{
 .admin-box{
     display:flex;
     align-items:center;
-    gap:12px;
-    cursor:pointer;
+    gap:15px;
 }
 
-.admin-avatar{
-    width:45px;
-    height:45px;
+.admin-box img{
+    width:50px;
+    height:50px;
     border-radius:50%;
-    object-fit:cover;
 }
 
-.admin-info{
-    display:flex;
-    flex-direction:column;
+/*MODAL*/
+
+.modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,.45);
     justify-content:center;
-    line-height:1.2;
+    align-items:center;
+    z-index:9999;
 }
 
-.admin-name{
-    font-weight:600;
-    font-size:15px;
-    color:#000;
+.modal-content{
+    width:520px;
+    background:#fff;
+    border-radius:24px;
+    padding:30px;
 }
 
-.admin-role{
-    color:#777;
-    font-size:13px;
+.modal-header{
+    text-align:center;
+    margin-bottom:20px;
 }
 
-.admin-icon{
-    margin-left:6px;
-    color:#555;
+.modal-icon{
+    font-size:60px;
+    color:#dc3545;
+    margin-bottom:10px;
+}
+
+.success-icon{
+    color:#23b26d;
+}
+
+.form-group{
+    margin-bottom:18px;
+}
+
+.form-group label{
+    display:block;
+    margin-bottom:8px;
+    font-weight:bold;
+}
+
+.form-group input,
+.form-group select{
+    width:100%;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:12px;
+    font-size:14px;
+}
+
+.modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:12px;
+    margin-top:25px;
+}
+
+.cancel-btn{
+    background:#eee;
+    border:none;
+    padding:12px 22px;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.save-btn{
+    background:#ff4fa3;
+    color:white;
+    border:none;
+    padding:12px 22px;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.save-btn:hover{
+    background:#ff2d91;
 }
 
 </style>
@@ -283,7 +422,7 @@ table td{
                 QUẢN LÝ NỘI DUNG
             </div>
 
-            <a href="#">
+            <a href="categories.php">
                 <i class="fa-regular fa-folder"></i>
                 Danh mục
             </a>
@@ -337,19 +476,24 @@ table td{
             <p>Quản lý mã giảm giá hệ thống</p>
         </div>
 
+        <!-- ADMIN ACCOUNT -->
         <div class="admin-box">
-            <img src="https://img.magnific.com/free-vector/smiling-woman-with-glasses_1308-177859.jpg?semt=ais_hybrid&w=740&q=80" class="admin-avatar">
-            <div class="admin-info">
-                <div class="admin-name">Admin</div>
-                <div class="admin-role">Quản trị viên</div>
+            <img src="https://img.magnific.com/free-vector/smiling-woman-with-glasses_1308-177859.jpg?semt=ais_hybrid&w=740&q=80">
+            <div>
+                <strong>Admin</strong><br>
+                <small>Quản trị viên</small>
             </div>
-            <i class="fa-solid fa-chevron-down admin-icon"></i>
+            <i class="fa-solid fa-chevron-down"></i>
         </div>
     </div>
 
     <div class="header">
         <h2>Danh sách khuyến mãi</h2>
-        <button class="add-btn">+ Thêm mã</button>
+        <button
+            class="add-btn"
+            onclick="openAddModal()">
+            + Thêm mã
+        </button>
     </div>
 
     <div class="table-box">
@@ -402,34 +546,35 @@ table td{
                  <td>
                     <div style="display:flex; gap:10px;">
                         <!-- SỬA -->
-                        <a href="edit_promotion.php?id=<?php echo $p['promotion_id']; ?>">
-                            <button style="
-                                width:38px;
-                                height:38px;
-                                border:none;
-                                border-radius:10px;
-                                background:#ffb400;
-                                color:white;
-                                cursor:pointer;">
-                                <i class="fa fa-pen"></i>
-                            </button>
-                        </a>
+                        <button
+                            onclick='openEditPopup(
+                            <?php echo json_encode($p); ?>
+                            )'
+                            style="
+                            width:38px;
+                            height:38px;
+                            border:none;
+                            border-radius:10px;
+                            background:#ffb400;
+                            color:white;
+                            cursor:pointer;">
+                            <i class="fa fa-pen"></i>
+                        </button>
 
                         <!-- XÓA -->
-                        <a href="promotions.php?delete=<?php echo $p['promotion_id']; ?>"
-                        onclick="return confirm('Bạn có chắc muốn xóa mã này?')">
-
-                            <button style="
-                                width:38px;
-                                height:38px;
-                                border:none;
-                                border-radius:10px;
-                                background:#ff4d6d;
-                                color:white;
-                                cursor:pointer;">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </a>
+                        <button
+                            onclick="openDeletePopup(
+                            <?php echo $p['promotion_id']; ?>)"
+                            style="
+                            width:38px;
+                            height:38px;
+                            border:none;
+                            border-radius:10px;
+                            background:#ff4d6d;
+                            color:white;
+                            cursor:pointer;">
+                            <i class="fa fa-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -438,5 +583,272 @@ table td{
     </div>
 </div>
 </div>
+
+<!-- ADD PROMOTION MODAL -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <i class="fa-solid fa-tags modal-icon"></i>
+            <h2>Thêm mã khuyến mãi</h2>
+        </div>
+
+        <form action="promotions.php" method="POST">
+
+            <div class="form-group">
+                <label>Mã khuyến mãi</label>
+                <input
+                    type="text"
+                    name="code"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label>Loại giảm</label>
+                <select name="discount_type">
+
+                    <option value="percent">Phần trăm (%)</option>
+
+                    <option value="fixed">Số tiền (VNĐ)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Giá trị</label>
+                <input
+                    type="number"
+                    name="discount_value"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label>Số lượng</label>
+                <input
+                    type="number"
+                    name="quantity"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label>Ngày bắt đầu</label>
+                <input
+                    type="date"
+                    name="start_date"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label>Ngày kết thúc</label>
+
+                <input
+                    type="date"
+                    name="end_date"
+                    required>
+            </div>
+
+            <div class="modal-actions">
+                <button
+                    type="button"
+                    class="cancel-btn"
+                    onclick="closeAddModal()">
+                    Hủy
+                </button>
+
+                <button
+                    type="submit"
+                    name="addPromotion"
+                    class="save-btn">
+                    Thêm
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- EDIT POPUP -->
+<div id="editPromotionModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <i class="fa-solid fa-pen-to-square modal-icon"></i>
+            <h2>
+                Sửa mã khuyến mãi
+            </h2>
+        </div>
+
+        <form method="POST">
+            <input type="hidden" name="promotion_id" id="edit_id">
+            <div class="form-group">
+                <label>
+                    Mã khuyến mãi
+                </label>
+                <input type="text" name="code" id="edit_code" required>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    Loại giảm
+                </label>
+
+                <select name="discount_type" id="edit_type"> 
+                    <option value="percent">
+                        Phần trăm (%)
+                    </option>
+
+                    <option value="fixed">
+                        Số tiền (VNĐ)
+                    </option>
+                </select>
+            </div>
+        
+            <div class="form-group">
+                <label>
+                    Giá trị giảm
+                </label>
+
+                <input type="number" name="discount_value" id="edit_value">
+            </div>
+
+            <div class="form-group">
+                <label>
+                    Số lượng
+                </label>
+
+                <input type="number" name="quantity" id="edit_quantity">
+            </div>
+
+            <div class="form-group">
+                <label>
+                    Thời gian áp dụng
+                </label>
+
+                <div style=" display:flex; gap:12px;">
+                    <input type="date" name="start_date" id="edit_start">
+                    <input type="date" name="end_date" id="edit_end">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button
+                    type="button"
+                    class="cancel-btn"
+                    onclick="closeEditPopup()">
+                    Hủy
+                </button>
+
+                <button
+                    name="updatePromotion"
+                    class="save-btn">
+                    Lưu thay đổi
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- DELETE POPUP -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <i class="fa-solid fa-circle-xmark modal-icon"></i>
+            <h2>Xóa khuyến mãi</h2>
+        </div>
+
+        <form method="POST">
+            <input type="hidden" name="delete_id" id="delete_id">
+            <p style="text-align:center">
+                Bạn có chắc muốn xóa mã này?
+            </p>
+    
+            <div class="modal-actions">
+                <button type="button" class="cancel-btn" onclick="closeDeletePopup()">
+                    Hủy
+                </button>
+
+                <button name="deletePromotion" class="save-btn">
+                    Xóa
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- SUCCESS POPUP -->
+<div id="successModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <i class="fa-solid fa-circle-check modal-icon success-icon"></i>
+            <h2 id="successText"></h2>
+        </div>
+
+        <div class="modal-actions">
+            <button
+                class="save-btn"
+                onclick="closeSuccess()">
+                OK
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openAddModal(){
+        document.getElementById("addModal").style.display="flex";
+    }
+
+    function closeAddModal(){
+        document.getElementById("addModal").style.display="none";
+    }
+
+    window.onclick=function(e){
+        if(e.target==document.getElementById("addModal")){
+            closeAddModal();
+        }
+    }
+
+    function openAddModal(){
+    document.getElementById("addModal").style.display="flex";
+}
+
+    function closeAddModal(){
+        document.getElementById("addModal").style.display="none";
+    }
+
+    function openEditPopup(data){
+        document.getElementById("editPromotionModal").style.display="flex";
+
+        document.getElementById("edit_id").value=data.promotion_id;
+        document.getElementById("edit_code").value=data.code;
+        document.getElementById("edit_type").value=data.discount_type;
+        document.getElementById("edit_value").value=data.discount_value;
+        document.getElementById("edit_quantity").value=data.quantity;
+        document.getElementById("edit_start").value=data.start_date;
+        document.getElementById("edit_end").value=data.end_date;
+    }
+
+    function closeEditPopup(){
+        document.getElementById("editPromotionModal").style.display="none";
+    }
+
+    function openDeletePopup(id){
+        document.getElementById("deleteModal").style.display="flex";
+        document.getElementById("delete_id").value=id;
+    }
+
+    function closeDeletePopup(){
+        document.getElementById("deleteModal").style.display="none";
+    }
+
+    function closeSuccess(){
+        document.getElementById("successModal").style.display="none";
+    }
+
+    <?php if (isset($_GET['success'])) { ?>
+
+    window.onload=function(){
+        document.getElementById("successText").innerHTML =
+        "<?php echo $_GET['success']; ?> mã khuyến mãi thành công";
+        document.getElementById("successModal").style.display="flex";
+    }
+    <?php } ?>
+</script>
 </body>
 </html>

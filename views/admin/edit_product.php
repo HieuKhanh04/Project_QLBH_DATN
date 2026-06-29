@@ -5,9 +5,11 @@ $id = $_GET['id'] ?? 0;
 
 /* PRODUCT */
 $stmt = $conn->prepare('
-SELECT *
-FROM products
-WHERE product_id=?
+SELECT p.*, c.name AS category_name
+FROM products p
+LEFT JOIN categories c 
+ON p.category_id = c.category_id
+WHERE p.product_id=?
 ');
 $stmt->execute([$id]);
 
@@ -126,7 +128,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     UPDATE products
     SET
         name=?,
-        price=?,
         description=?,
         category_id=?,
         status=?
@@ -135,7 +136,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $stmt->execute([
         $name,
-        $price,
         $description,
         $category_id,
         $status,
@@ -166,27 +166,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-    if (!empty($_POST['new_size'])) {
-        $stmt = $conn->prepare('
-        INSERT INTO product_variants(
-            product_id,
-            size,
-            color,
-            price,
-            discount_price,
-            quantity
-        )
-        VALUES(?,?,?,?,?,?)
-        ');
+    if (isset($_POST['new_size'])) {
+        foreach ($_POST['new_size'] as $i => $size) {
+            if ($size == '') {
+                continue;
+            }
 
-        $stmt->execute([
-            $id,
-            $_POST['new_size'],
-            $_POST['new_color'],
-            $_POST['new_price'],
-            $_POST['new_discount'],
-            $_POST['new_quantity'],
-        ]);
+            $stmt = $conn->prepare('
+                INSERT INTO product_variants
+                (
+                    product_id,
+                    size,
+                    color,
+                    price,
+                    discount_price,
+                    quantity
+                )
+                VALUES(?,?,?,?,?,?)
+            ');
+
+            $stmt->execute([
+                $id,
+                $size,
+                $_POST['new_color'][$i],
+                $_POST['new_price'][$i],
+                $_POST['new_discount'][$i],
+                $_POST['new_quantity'][$i],
+            ]);
+        }
     }
 
     if (!empty($_FILES['product_images']['name'][0])) {
@@ -229,7 +236,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
 <meta charset="UTF-8">
 <title>Sửa sản phẩm</title>
-
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 
 body{
@@ -275,14 +283,25 @@ select{
 }
 
 .variant-table{
-    width:100%;
-    border-collapse:collapse;
+	width:100%;
+	border-collapse:collapse;
+	table-layout:fixed;
+	margin-top:15px;
 }
 
 .variant-table th,
 .variant-table td{
-    border:1px solid #eee;
-    padding:10px;
+	border:1px solid #eee;
+	padding:12px;
+	vertical-align:middle;
+}
+
+.variant-table input{
+	width:100%;
+	box-sizing:border-box;
+	padding:10px;
+	border:1px solid #ddd;
+	border-radius:10px;
 }
 
 .image-grid{
@@ -350,6 +369,48 @@ select{
     margin-top:5px;
 }
 
+input:focus,
+textarea:focus,
+select:focus{
+    border-color:#ff4fa3;
+    outline:none;
+}
+
+.title{
+    color:#ff4fa3;
+}
+
+.delete-variant,
+.remove-btn{
+	width:40px;
+	height:40px;
+	background:#ff4d6d;
+	color:#fff;
+	border:none;
+	border-radius:10px;
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	cursor:pointer;
+	text-decoration:none;
+	margin:auto;
+}
+
+.add-variant-btn{
+    margin-top:15px;
+    padding:12px 20px;
+    background:#ff4fa3;
+    color:white;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.variant-table input{
+    width:100%;
+}
+
 </style>
 </head>
 
@@ -358,9 +419,7 @@ select{
 <form method="POST" enctype="multipart/form-data">
 
 <div class="container">
-
     <div class="box">
-
         <div class="title">
             Thông tin sản phẩm
         </div>
@@ -372,15 +431,6 @@ select{
             type="text"
             name="name"
             value="<?php echo htmlspecialchars($product['name']); ?>">
-        </div>
-
-        <div class="form-group">
-            <label>Giá gốc</label>
-
-            <input
-            type="number"
-            name="price"
-            value="<?php echo $product['price']; ?>">
         </div>
 
         <div class="form-group">
@@ -422,92 +472,155 @@ select{
                 </option>
             </select>
         </div>
-
     </div>
 
     <div class="box">
-
         <div class="title">
             Biến thể sản phẩm
         </div>
 
+        <!-- DANH SÁCH BIẾN THỂ -->
         <table class="variant-table">
+            <thead>
+                <tr>
+                    <th>Size</th>
+                    <th>Màu</th>
+                    <th>Giá</th>
+                    <th>Giảm giá</th>
+                    <th>Số lượng</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
 
-            <tr>
-                <th>Size</th>
-                <th>Màu</th>
-                <th>Giá</th>
-                <th>Giảm giá</th>
-                <th>Tồn kho</th>
-                <th>Xóa</th>
-            </tr>
+            <tbody>
+                <?php foreach ($variants as $v) { ?>
+                    <tr>
+                        <td>
+                            <input
+                                type="hidden"
+                                name="variant_id[]"
+                                value="<?php echo $v['id']; ?>">
 
-            <?php foreach ($variants as $v) { ?>
+                            <input
+                                type="text"
+                                name="size[]"
+                                value="<?php echo htmlspecialchars($v['size']); ?>">
+                        </td>
 
-            <tr>
+                        <td>
+                            <input
+                                type="text"
+                                name="color[]"
+                                value="<?php echo htmlspecialchars($v['color']); ?>">
+                        </td>
 
-                <input type="hidden"
-                       name="variant_id[]"
-                       value="<?php echo $v['id']; ?>">
+                        <td>
+                            <input
+                                type="number"
+                                name="variant_price[]"
+                                value="<?php echo $v['price']; ?>">
+                        </td>
 
-                <td>
-                    <input type="text"
-                           name="size[]"
-                           value="<?php echo $v['size']; ?>">
-                </td>
+                        <td>
+                            <input
+                                type="number"
+                                name="discount_price[]"
+                                value="<?php echo $v['discount_price']; ?>">
+                        </td>
 
-                <td>
-                    <input type="text"
-                           name="color[]"
-                           value="<?php echo $v['color']; ?>">
-                </td>
+                        <td>
+                            <input
+                                type="number"
+                                name="quantity[]"
+                                value="<?php echo $v['quantity']; ?>">
+                        </td>
 
-                <td>
-                    <input type="number"
-                           name="variant_price[]"
-                           value="<?php echo $v['price']; ?>">
-                </td>
-
-                <td>
-                    <input type="number"
-                           name="discount_price[]"
-                           value="<?php echo $v['discount_price']; ?>">
-                </td>
-
-                <td>
-                    <input type="number"
-                           name="quantity[]"
-                           value="<?php echo $v['quantity']; ?>">
-                </td>
-                <td>
-                    <a
-                        href="?id=<?php echo $id; ?>&delete_variant=<?php echo $v['id']; ?>"
-                        onclick="return confirm('Xóa biến thể?')">
-                        🗑️
-                    </a>
-                </td>
-            </tr>
-            <?php } ?>
+                        <td>
+                            <a
+                            href="?id=<?php echo $id; ?>&delete_variant=<?php echo $v['id']; ?>"
+                            onclick="return confirm('Xóa biến thể này?')"
+                            class="delete-variant">
+                                <i class="fa-solid fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                <?php } ?>
+            </tbody>
         </table>
 
-        <h3>Thêm biến thể</h3>
-        <div class="variant-add">
-            <input type="text" name="new_size" placeholder="Size">
-            <input type="text" name="new_color" placeholder="Màu">
-            <input type="number" name="new_price" placeholder="Giá">
-            <input type="number" name="new_discount" placeholder="Giảm giá">
-            <input type="number" name="new_quantity" placeholder="Số lượng">
-        </div>
+        <!-- THÊM BIẾN THỂ -->
+        <h3 style="margin-top:25px;">
+            Thêm biến thể
+        </h3>
+
+        <table class="variant-table">
+            <thead>
+                <tr>
+                    <th>Size</th>
+                    <th>Màu</th>
+                    <th>Giá</th>
+                    <th>Giảm giá</th>
+                    <th>Số lượng</th>
+                    <th>Thêm</th>
+                </tr>
+            </thead>
+
+            <tbody id="newVariant">
+                <tr>
+                    <td>
+                        <input
+                        type="text"
+                        name="new_size[]"
+                        placeholder="Size">
+                    </td>
+
+                    <td>
+                        <input
+                        type="text"
+                        name="new_color[]"
+                        placeholder="Màu">
+                    </td>
+
+                    <td>
+                        <input
+                        type="number"
+                        name="new_price[]"
+                        placeholder="Giá">
+                    </td>
+
+                    <td>
+                        <input
+                        type="number"
+                        name="new_discount[]"
+                        placeholder="Giảm">
+                    </td>
+
+                    <td>
+                        <input
+                        type="number"
+                        name="new_quantity[]"
+                        placeholder="Số lượng">
+                    </td>
+
+                    <td style="text-align:center;">
+                        <button
+                            type="button"
+                            class="add-variant-btn"
+                            onclick="addVariant()">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <div class="box">
-
         <div class="title">
             Hình ảnh sản phẩm
         </div>
 
         <div class="image-grid">
-
             <?php foreach ($images as $img) { ?>
                 <div class="image-item">
                     <img src="../../<?php echo $img['image_url']; ?>">
@@ -555,6 +668,55 @@ select{
 </div>
 
 </form>
+
+<script>
+    function addVariant(){
+        let html = `
+        <tr>
+            <td>
+                <input type="text"
+                    name="new_size[]"
+                    placeholder="Size">
+            </td>
+
+            <td>
+                <input type="text"
+                    name="new_color[]"
+                    placeholder="Màu">
+            </td>
+
+            <td>
+                <input type="number"
+                    name="new_price[]"
+                    placeholder="Giá">
+            </td>
+
+            <td>
+                <input type="number"
+                    name="new_discount[]"
+                    placeholder="Giảm">
+            </td>
+
+            <td>
+                <input type="number"
+                    name="new_quantity[]"
+                    placeholder="SL">
+            </td>
+
+           <td></td>
+        </tr>
+        `;
+
+        document
+        .getElementById('newVariant')
+        .insertAdjacentHTML('beforeend',html);
+    }
+
+
+    function removeVariant(btn){
+        btn.closest('tr').remove();
+    }
+</script>
 
 </body>
 </html>

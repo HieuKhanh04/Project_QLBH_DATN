@@ -157,7 +157,7 @@ body{
 }
 
 /* ADMIN BOX (GIỮ NGUYÊN STYLE PROMOTIONS) */
-.admin-box{
+/* .admin-box{
     display:flex;
     align-items:center;
     gap:12px;
@@ -192,6 +192,18 @@ body{
 .admin-icon{
     margin-left:6px;
     color:#555;
+} */
+
+.admin-box{
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+.admin-box img{
+    width:50px;
+    height:50px;
+    border-radius:50%;
 }
 
 /* KPI */
@@ -272,7 +284,7 @@ body{
             <!-- 🔥 PHẦN BẠN BỊ THIẾU ĐÃ ĐƯỢC GIỮ NGUYÊN -->
             <div class="menu-title">QUẢN LÝ NỘI DUNG</div>
 
-            <a href="#">
+            <a href="categories.php">
                 <i class="fa-regular fa-folder"></i>
                 Danh mục
             </a>
@@ -324,13 +336,14 @@ body{
             <p>Phân tích doanh thu hệ thống</p>
         </div>
 
+        <!-- ADMIN ACCOUNT -->
         <div class="admin-box">
-            <img src="https://img.magnific.com/free-vector/smiling-woman-with-glasses_1308-177859.jpg?semt=ais_hybrid&w=740&q=80" class="admin-avatar">
-            <div class="admin-info">
-                <div class="admin-name">Admin</div>
-                <div class="admin-role">Quản trị viên</div>
+            <img src="https://img.magnific.com/free-vector/smiling-woman-with-glasses_1308-177859.jpg?semt=ais_hybrid&w=740&q=80">
+            <div>
+                <strong>Admin</strong><br>
+                <small>Quản trị viên</small>
             </div>
-            <i class="fa-solid fa-chevron-down admin-icon"></i>
+            <i class="fa-solid fa-chevron-down"></i>
         </div>
 
     </div>
@@ -403,7 +416,7 @@ body{
             </div>
 
             <div>
-                <p style="color:#777;">Tăng trưởng giả lập</p>
+                <p style="color:#777;">Tăng trưởng</p>
                 <h2 style="color:#4caf50;">+12.4%</h2>
             </div>
 

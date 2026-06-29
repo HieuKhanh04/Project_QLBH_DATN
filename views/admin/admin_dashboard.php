@@ -656,7 +656,7 @@ body{
                     QUẢN LÝ NỘI DUNG
                 </div>
 
-                <a href="#" class="sidebar-item">
+                <a href="categories.php">
                     <i class="fa-regular fa-folder"></i>
                     Danh mục
                 </a>

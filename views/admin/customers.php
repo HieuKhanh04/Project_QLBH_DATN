@@ -173,6 +173,7 @@ body{
 table{
     width:100%;
     border-collapse:collapse;
+    table-layout:fixed;
 }
 
 table th{
@@ -244,7 +245,7 @@ table td{
 
             <div class="menu-title">QUẢN LÝ NỘI DUNG</div>
 
-            <a href="#">
+            <a href="categories.php">
                 <i class="fa-regular fa-folder"></i>
                 Danh mục
             </a>
@@ -317,16 +318,44 @@ table td{
                 <th>Số đơn</th>
                 <th>Tổng chi tiêu</th>
                 <th>Đơn gần nhất</th>
+                <th>Thao tác</th>
             </tr>
 
             <?php foreach ($customers as $c) { ?>
 
             <tr>
-                <td><?php echo $c['receiver_name']; ?></td>
-                <td><?php echo $c['receiver_phone']; ?></td>
-                <td><span class="badge"><?php echo $c['total_orders']; ?></span></td>
-                <td><?php echo number_format($c['total_spent']); ?> đ</td>
-                <td><?php echo $c['last_order']; ?></td>
+                <td><?php echo htmlspecialchars($c['receiver_name']); ?></td>
+                <td><?php echo htmlspecialchars($c['receiver_phone']); ?></td>
+
+                <td>
+                    <span class="badge">
+                        <?php echo $c['total_orders']; ?>
+                    </span>
+                </td>
+
+                <td>
+                    <?php echo number_format($c['total_spent']); ?> đ
+                </td>
+
+                <td>
+                    <?php echo date('d/m/Y H:i', strtotime($c['last_order'])); ?>
+                </td>
+
+                <td>
+                    <a href="customer_orders.php?phone=<?php echo urlencode($c['receiver_phone']); ?>">
+                        <button style="
+                            background:#0d6efd;
+                            color:white;
+                            border:none;
+                            padding:9px 18px;
+                            border-radius:10px;
+                            cursor:pointer;
+                            font-weight:bold;
+                        ">
+                            Xem chi tiết
+                        </button>
+                    </a>
+                </td>
             </tr>
 
             <?php } ?>

@@ -45,8 +45,8 @@ function statusText($status)
     switch ($status) {
         case 'pending':
             return 'Chờ xác nhận';
-        case 'processing':
-            return 'Đang xử lý';
+        case 'confirmed':
+            return 'Đã xác nhận';
         case 'shipping':
             return 'Đang giao';
         case 'delivered':
