@@ -666,9 +666,9 @@ body{
                     Banner
                 </a>
 
-                <a href="#" class="sidebar-item">
-                    <i class="fa-regular fa-file-lines"></i>
-                    Bài viết
+                <a href="notifications.php" class="sidebar-item">
+                    <i class="fa-regular fa-bell"></i>
+                    Thông báo
                 </a>
 
                 <div class="menu-title">
@@ -680,7 +680,7 @@ body{
                     Cài đặt
                 </a>
 
-                <a href="#" class="sidebar-item">
+                <a href="account.php" class="sidebar-item">
                     <i class="fa-regular fa-user"></i>
                     Tài khoản
                 </a>

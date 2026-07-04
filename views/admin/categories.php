@@ -1,5 +1,6 @@
 <?php
 require_once '../../config/database.php';
+require_once '../../includes/activity_log.php';
 
 /* THÊM */
 if (isset($_POST['addCategory'])) {
@@ -20,6 +21,13 @@ if (isset($_POST['addCategory'])) {
         $_POST['status'],
         $_POST['sort_order'],
     ]);
+    $categoryId = $conn->lastInsertId();
+    writeLog(
+        $conn,
+        'CREATE',
+        'Danh mục',
+        'Thêm danh mục #'.$categoryId.' - '.$_POST['name']
+    );
 
     header('Location: categories.php?success=Thêm');
     exit;
@@ -46,6 +54,13 @@ if (isset($_POST['updateCategory'])) {
         $_POST['category_id'],
     ]);
 
+    writeLog(
+        $conn,
+        'UPDATE',
+        'Danh mục',
+        'Sửa danh mục #'.$_POST['category_id'].' - '.$_POST['name']
+    );
+
     header('Location: categories.php?success=Sửa');
     exit;
 }
@@ -53,13 +68,37 @@ if (isset($_POST['updateCategory'])) {
 /* XÓA */
 if (isset($_POST['deleteCategory'])) {
     $stmt = $conn->prepare('
-        DELETE FROM categories
+        SELECT name
+        FROM categories
         WHERE category_id=?
     ');
 
     $stmt->execute([
         $_POST['delete_id'],
     ]);
+
+    $category = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$category) {
+        header('Location: categories.php');
+        exit;
+    }
+
+    $stmt = $conn->prepare('
+        DELETE FROM categories
+        WHERE category_id=?
+    ');
+
+    if ($stmt->execute([
+        $_POST['delete_id'],
+    ])) {
+        writeLog(
+            $conn,
+            'DELETE',
+            'Danh mục',
+            'Xóa danh mục #'.$_POST['delete_id'].' - '.$category['name']
+        );
+    }
 
     header(
         'Location: categories.php?success=Xóa'
@@ -106,7 +145,7 @@ body{
     display:flex;
 }
 
-/* SIDEBAR (GIỮ NGUYÊN PRODUCTS) */
+/* SIDEBAR*/
 .sidebar{
     width:260px;
     background:white;
@@ -271,7 +310,7 @@ td{
 
 .modal-icon{
     font-size:60px;
-    color:#dc3545;
+    color:#ff4fa3;
 }
 
 .form-group{
@@ -410,9 +449,9 @@ select{
                 Banner
             </a>
 
-            <a href="#">
-                <i class="fa-regular fa-file-lines"></i>
-                Bài viết
+            <a href="notifications.php" class="sidebar-item">
+                <i class="fa-regular fa-bell"></i>
+                Thông báo
             </a>
 
             <div class="menu-title">
@@ -424,7 +463,7 @@ select{
                 Cài đặt
             </a>
 
-            <a href="#">
+            <a href="account.php">
                 <i class="fa-regular fa-user"></i>
                 Tài khoản
             </a>

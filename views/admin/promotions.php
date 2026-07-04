@@ -432,9 +432,9 @@ table td{
                 Banner
             </a>
 
-            <a href="#">
-                <i class="fa-regular fa-file-lines"></i>
-                Bài viết
+            <a href="notifications.php" class="sidebar-item">
+                <i class="fa-regular fa-bell"></i>
+                Thông báo
             </a>
 
             <div class="menu-title">
@@ -446,7 +446,7 @@ table td{
                 Cài đặt
             </a>
 
-            <a href="#">
+            <a href="account.php">
                 <i class="fa-regular fa-user"></i>
                 Tài khoản
             </a>

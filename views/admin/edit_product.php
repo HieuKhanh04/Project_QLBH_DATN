@@ -1,5 +1,6 @@
 <?php
 require_once '../../config/database.php';
+require_once '../../includes/activity_log.php';
 
 $id = $_GET['id'] ?? 0;
 
@@ -14,15 +15,37 @@ WHERE p.product_id=?
 $stmt->execute([$id]);
 
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
+if (!$product) {
+    exit('Không tìm thấy sản phẩm');
+}
+
 if (isset($_GET['delete_variant'])) {
     $variantId = $_GET['delete_variant'];
 
+    // Lấy thông tin biến thể trước khi xóa
     $stmt = $conn->prepare('
-    DELETE FROM product_variants
-    WHERE id=?
+        SELECT size, color
+        FROM product_variants
+        WHERE id=?
     ');
 
     $stmt->execute([$variantId]);
+    $variant = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Xóa biến thể
+    $stmt = $conn->prepare('
+        DELETE FROM product_variants
+        WHERE id=?
+    ');
+
+    if ($stmt->execute([$variantId])) {
+        writeLog(
+            $conn,
+            'DELETE',
+            'Biến thể sản phẩm',
+            'Xóa biến thể '.$variant['size'].' - '.$variant['color'].' của sản phẩm '.$id.' - '.$product['name']
+        );
+    }
 
     header('Location: edit_product.php?id='.$id);
     exit;
@@ -47,6 +70,13 @@ if (isset($_GET['main_image'])) {
 
     $stmt->execute([$imageId]);
 
+    writeLog(
+        $conn,
+        'UPDATE',
+        'Sản phẩm',
+        'Đổi ảnh đại diện sản phẩm '.$id.' - '.$product['name']
+    );
+
     header('Location: edit_product.php?id='.$id);
     exit;
 }
@@ -65,28 +95,29 @@ if (isset($_GET['delete_image'])) {
     $image = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($image) {
-        $file =
-            '../../'.
-            $image['image_url'];
+        $file = '../../'.$image['image_url'];
 
         if (file_exists($file)) {
             unlink($file);
         }
 
         $stmt = $conn->prepare('
-            DELETE FROM product_images
-            WHERE id=?
-        ');
+        DELETE FROM product_images
+        WHERE id=?
+    ');
 
-        $stmt->execute([$imageId]);
+        if ($stmt->execute([$imageId])) {
+            writeLog(
+                $conn,
+                'DELETE',
+                'Hình ảnh sản phẩm',
+                'Xóa ảnh #'.$imageId.' của sản phẩm #'.$id.' - '.$product['name']
+            );
+        }
     }
 
     header('Location: edit_product.php?id='.$id);
     exit;
-}
-
-if (!$product) {
-    exit('Không tìm thấy sản phẩm');
 }
 
 /* VARIANTS */
@@ -134,25 +165,46 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     WHERE product_id=?
     ');
 
-    $stmt->execute([
+    if ($stmt->execute([
         $name,
         $description,
         $category_id,
         $status,
         $id,
-    ]);
+    ])) {
+        writeLog(
+            $conn,
+            'UPDATE',
+            'Sản phẩm',
+            'Cập nhật thông tin sản phẩm '.$id.' - '.$name
+        );
+    }
 
     if (isset($_POST['variant_id'])) {
         foreach ($_POST['variant_id'] as $key => $variantId) {
+            // 1. LẤY ẢNH CŨ
+            $stmtOld = $conn->prepare('SELECT image FROM product_variants WHERE id=?');
+            $stmtOld->execute([$variantId]);
+            $old = $stmtOld->fetch(PDO::FETCH_ASSOC);
+
+            $variantImage = $old['image'] ?? ''; // GIỮ ẢNH CŨ
+
+            // 2. NẾU UPLOAD ẢNH MỚI
+            if (isset($_FILES['new_image']['name'][$key]) && $_FILES['new_image']['name'][$key] != '') {
+                $fileName = time().'_'.basename($_FILES['new_image']['name'][$key]);
+                $tmpName = $_FILES['new_image']['tmp_name'][$key];
+                $target = '../../uploads/products/'.$fileName;
+
+                if (move_uploaded_file($tmpName, $target)) {
+                    $variantImage = 'uploads/products/'.$fileName;
+                }
+            }
+
+            // 3. UPDATE
             $stmt = $conn->prepare('
-            UPDATE product_variants
-            SET
-                size=?,
-                color=?,
-                price=?,
-                discount_price=?,
-                quantity=?
-            WHERE id=?
+                UPDATE product_variants
+                SET size=?, color=?, price=?, discount_price=?, quantity=?, image=?
+                WHERE id=?
             ');
 
             $stmt->execute([
@@ -161,37 +213,66 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $_POST['variant_price'][$key],
                 $_POST['discount_price'][$key],
                 $_POST['quantity'][$key],
+                $variantImage,
                 $variantId,
             ]);
+
+            writeLog(
+                $conn,
+                'UPDATE',
+                'Sản phẩm',
+                'Cập nhật biến thể #'.$variantId.' của sản phẩm #'.$id.' - '.$name
+            );
         }
     }
-
+    // echo '<pre>';
+    // print_r($_POST);
+    // exit;
     if (isset($_POST['new_size'])) {
-        foreach ($_POST['new_size'] as $i => $size) {
-            if ($size == '') {
+        foreach ($_POST['new_price'] as $i => $price) {
+            if ($price == '') {
                 continue;
             }
+            // ===== UPLOAD IMAGE VARIANT =====
+            $variantImage = null;
+            /* 1. UPLOAD ẢNH MỚI (ưu tiên cao nhất) */
+            if (!empty($_FILES['new_image']['name'][$i])) {
+                $fileName = time().'_'.basename($_FILES['new_image']['name'][$i]);
+                $tmpName = $_FILES['new_image']['tmp_name'][$i];
+                $target = '../../uploads/products/'.$fileName;
 
+                if (move_uploaded_file($tmpName, $target)) {
+                    $variantImage = 'uploads/products/'.$fileName;
+                }
+            }
+
+            /* 2. NẾU KHÔNG UPLOAD → DÙNG ẢNH CŨ */
+            if (!$variantImage && !empty($_POST['new_image_ref'][$i])) {
+                $variantImage = $_POST['new_image_ref'][$i];
+            }
+
+            // ===== INSERT VARIANT =====
             $stmt = $conn->prepare('
-                INSERT INTO product_variants
-                (
+                INSERT INTO product_variants(
                     product_id,
                     size,
                     color,
                     price,
                     discount_price,
-                    quantity
+                    quantity,
+                    image
                 )
-                VALUES(?,?,?,?,?,?)
+                VALUES(?,?,?,?,?,?,?)
             ');
 
             $stmt->execute([
                 $id,
-                $size,
-                $_POST['new_color'][$i],
-                $_POST['new_price'][$i],
-                $_POST['new_discount'][$i],
-                $_POST['new_quantity'][$i],
+                $_POST['new_size'][$i] ?: null,
+                $_POST['new_color'][$i] ?: null,
+                $price,
+                $_POST['new_discount'][$i] ?: null,
+                $_POST['new_quantity'][$i] ?: 0,
+                $variantImage,
             ]);
         }
     }
@@ -224,6 +305,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'uploads/products/'.$fileName,
             ]);
         }
+        $count = count($_FILES['product_images']['name']);
+        writeLog(
+            $conn,
+            'CREATE',
+            'Sản phẩm',
+            'Thêm '.$count.' hình ảnh cho sản phẩm #'.$id.' - '.$name
+        );
     }
 
     header('Location: edit_product.php?id='.$id);
@@ -411,11 +499,51 @@ select:focus{
     width:100%;
 }
 
+.variant-preview img{
+    width:60px;
+    height:60px;
+    object-fit:cover;
+    border-radius:8px;
+    margin-top:5px;
+    border:1px solid #ddd;
+}
+
+.variant-preview-list{
+    display:flex;
+    gap:15px;
+    flex-wrap:wrap;
+}
+
+.variant-card{
+    width:180px;
+    border:1px solid #eee;
+    border-radius:12px;
+    padding:10px;
+    background:#fff;
+}
+
+.variant-card img{
+    width:100%;
+    height:120px;
+    object-fit:cover;
+    border-radius:10px;
+    margin-bottom:8px;
+}
+
+.variant-card .name{
+    font-weight:bold;
+    font-size:14px;
+}
+
+.variant-card .price{
+    color:#ff4fa3;
+    font-weight:bold;
+}
+
 </style>
 </head>
 
 <body>
-
 <form method="POST" enctype="multipart/form-data">
 
 <div class="container">
@@ -488,6 +616,7 @@ select:focus{
                     <th>Giá</th>
                     <th>Giảm giá</th>
                     <th>Số lượng</th>
+                    <th>Ảnh</th>
                     <th>Thao tác</th>
                 </tr>
             </thead>
@@ -536,6 +665,14 @@ select:focus{
                         </td>
 
                         <td>
+                            <?php if (!empty($v['image'])) { ?>
+                                <img src="../../<?php echo $v['image']; ?>" width="50">
+                            <?php } else { ?>
+                                <span>Không có ảnh</span>
+                            <?php } ?>
+                        </td>
+
+                        <td>
                             <a
                             href="?id=<?php echo $id; ?>&delete_variant=<?php echo $v['id']; ?>"
                             onclick="return confirm('Xóa biến thể này?')"
@@ -547,6 +684,11 @@ select:focus{
                 <?php } ?>
             </tbody>
         </table>
+
+        <div class="box">
+            <div class="title">Preview biến thể</div>
+            <div id="variant-preview-list" class="variant-preview-list"></div>
+        </div>
 
         <!-- THÊM BIẾN THỂ -->
         <h3 style="margin-top:25px;">
@@ -561,6 +703,7 @@ select:focus{
                     <th>Giá</th>
                     <th>Giảm giá</th>
                     <th>Số lượng</th>
+                    <th>Ảnh</th>
                     <th>Thêm</th>
                 </tr>
             </thead>
@@ -600,6 +743,27 @@ select:focus{
                         type="number"
                         name="new_quantity[]"
                         placeholder="Số lượng">
+                    </td>
+
+                    <td>
+                        <input type="file"
+                            name="new_image[]"
+                            accept="image/*"
+                            onchange="previewVariantImage(this)">
+                        <div style="margin-top:5px;">
+                            <select name="new_image_ref[]">
+                                <option value="">-- Dùng ảnh cũ --</option>
+
+                                <?php foreach ($variants as $v) { ?>
+                                    <?php if (!empty($v['image'])) { ?>
+                                        <option value="<?php echo $v['image']; ?>">
+                                            <?php echo trim(($v['size'] ?? '').' - '.($v['color'] ?? ''), ' -'); ?>
+                                        </option>
+                                    <?php } ?>
+                                <?php } ?>
+                            </select>
+                        </div>
+                        <div class="variant-preview"></div>
                     </td>
 
                     <td style="text-align:center;">
@@ -673,37 +837,15 @@ select:focus{
     function addVariant(){
         let html = `
         <tr>
+            <td><input type="text" name="new_size[]" placeholder="Size"></td>
+            <td><input type="text" name="new_color[]" placeholder="Màu"></td>
+            <td><input type="number" name="new_price[]" placeholder="Giá"></td>
+            <td><input type="number" name="new_discount[]" placeholder="Giảm"></td>
+            <td><input type="number" name="new_quantity[]" placeholder="SL"></td>
             <td>
-                <input type="text"
-                    name="new_size[]"
-                    placeholder="Size">
+                <input type="file" name="new_image[]" accept="image/*" onchange="previewVariantImage(this)">
+                <div class="variant-preview"></div>
             </td>
-
-            <td>
-                <input type="text"
-                    name="new_color[]"
-                    placeholder="Màu">
-            </td>
-
-            <td>
-                <input type="number"
-                    name="new_price[]"
-                    placeholder="Giá">
-            </td>
-
-            <td>
-                <input type="number"
-                    name="new_discount[]"
-                    placeholder="Giảm">
-            </td>
-
-            <td>
-                <input type="number"
-                    name="new_quantity[]"
-                    placeholder="SL">
-            </td>
-
-           <td></td>
         </tr>
         `;
 
@@ -716,6 +858,98 @@ select:focus{
     function removeVariant(btn){
         btn.closest('tr').remove();
     }
+</script>
+
+<script>
+function previewVariantImage(input){
+    const file = input.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+        let preview = input.parentElement.querySelector('.variant-preview');
+
+        if(!preview){
+            preview = document.createElement('div');
+            preview.className = 'variant-preview';
+            input.parentElement.appendChild(preview);
+        }
+
+        preview.innerHTML = `<img src="${e.target.result}">`;
+    };
+
+    reader.readAsDataURL(file);
+}
+
+function renderVariantPreview(){
+    const rows = document.querySelectorAll('.variant-table tbody tr');
+
+    let html = '';
+
+    rows.forEach(row => {
+        const size = row.querySelector('input[name="size[]"]')?.value || '';
+        const color = row.querySelector('input[name="color[]"]')?.value || '';
+        const price = row.querySelector('input[name="variant_price[]"]')?.value || '';
+        const discount = row.querySelector('input[name="discount_price[]"]')?.value || '';
+
+        let img = '';
+
+        // =========================
+        // 1. ẢNH VARIANT CŨ (DB)
+        // =========================
+        const oldImg = row.querySelector('td img');
+        if (oldImg) {
+            img = oldImg.src;
+        }
+
+        // =========================
+        // 2. ẢNH UPLOAD MỚI
+        // =========================
+        const fileInput = row.querySelector('input[type="file"]');
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            img = URL.createObjectURL(fileInput.files[0]);
+        }
+
+        // =========================
+        // 3. ẢNH CHỌN TỪ DROPDOWN (QUAN TRỌNG)
+        // =========================
+        const select = row.querySelector('select[name="new_image_ref[]"]');
+        if (select && select.value && !fileInput?.files?.length) {
+            img = select.value;
+        }
+
+        html += `
+            <div class="variant-card">
+                ${img
+                    ? `<img src="${img}">`
+                    : `<div style="height:120px;background:#f5f5f5;border-radius:10px;"></div>`
+                }
+                <div class="name">${size} - ${color}</div>
+                <div class="price">${price}₫</div>
+                ${discount ? `<small>Sale: ${discount}₫</small>` : ''}
+            </div>
+        `;
+    });
+
+    document.getElementById('variant-preview-list').innerHTML = html;
+}
+
+document.addEventListener('input', function(e){
+    if(e.target.closest('.variant-table')){
+        renderVariantPreview();
+    }
+});
+
+document.addEventListener('change', function(e){
+    if(e.target.closest('.variant-table')){
+        renderVariantPreview();
+    }
+});
+
+window.addEventListener('DOMContentLoaded', function(){
+    renderVariantPreview();
+});
 </script>
 
 </body>

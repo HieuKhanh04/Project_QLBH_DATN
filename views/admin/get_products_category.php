@@ -1,5 +1,6 @@
 <?php
 require_once '../../config/database.php';
+require_once '../../includes/activity_log.php';
 
 $category_id = $_GET['category_id'] ?? 0;
 
@@ -17,11 +18,23 @@ if (!$category) {
     exit('Danh mục không tồn tại');
 }
 
+writeLog(
+    $conn,
+    'VIEW',
+    'Danh mục',
+    'Xem danh sách sản phẩm của danh mục #'.$category_id.' - '.$category['name']
+);
+
 $stmt = $conn->prepare('
-    SELECT *
-    FROM products
-    WHERE category_id=?
-    ORDER BY product_id DESC
+    SELECT
+        p.*,
+        pi.image_url
+    FROM products p
+    LEFT JOIN product_images pi
+        ON p.product_id = pi.product_id
+        AND pi.is_main = 1
+    WHERE p.category_id = ?
+    ORDER BY p.product_id DESC
 ');
 
 $stmt->execute([$category_id]);
@@ -119,7 +132,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <div class="box">
         <h1>
-            Danh mục: <?php echo $category['name']; ?>
+            Danh mục <?php echo $category['name']; ?>
         </h1>
 
         <p>
@@ -138,16 +151,11 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             <tr>
                 <td>
-                    <?php if (isset($p['image'])) { ?>
-
-                    <img src="../../uploads/products/<?php echo $p['image']; ?>">
-
+                    <?php if (!empty($p['image_url'])) { ?>
+                    <img src="../../<?php echo $p['image_url']; ?>">
                     <?php } else { ?>
-
                     Không có ảnh
-
                     <?php } ?>
-
                 </td>
 
                 <td>

@@ -32,6 +32,24 @@ WHERE product_id=?
 $stmt->execute([$id]);
 $variants = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+/* PRICE RANGE */
+$priceRange = [
+    'min' => null,
+    'max' => null,
+];
+
+foreach ($variants as $v) {
+    if (isset($v['price'])) {
+        $priceRange['min'] = $priceRange['min'] === null
+            ? $v['price']
+            : min($priceRange['min'], $v['price']);
+
+        $priceRange['max'] = $priceRange['max'] === null
+            ? $v['price']
+            : max($priceRange['max'], $v['price']);
+    }
+}
+
 /* CATEGORY */
 $stmt = $conn->prepare('
 SELECT name FROM categories
@@ -218,19 +236,52 @@ body{
 
 <!-- THUMB -->
 <div class="col-md-1 d-flex flex-md-column gap-2">
-<?php foreach ($images as $img) { ?>
-    <img src="../<?php echo $img['image_url']; ?>"
-         class="thumb-img"
-         onclick="changeImage(this.src)">
-<?php } ?>
+
+    <!-- Ảnh chung -->
+    <?php foreach ($images as $img) { ?>
+
+        <img
+            src="../<?php echo $img['image_url']; ?>"
+            class="thumb-img"
+            onclick="changeImage(this.src)">
+
+    <?php } ?>
+
+    <!-- Ảnh biến thể -->
+    <?php
+    $variantImages = [];
+
+foreach ($variants as $variant) {
+    if (
+        !empty($variant['image'])
+        && !in_array($variant['image'], $variantImages)
+    ) {
+        $variantImages[] = $variant['image'];
+        ?>
+
+            <img src="../<?php echo $variant['image']; ?>" class="thumb-img" onclick="changeImage(this.src)">
+        <?php
+    }
+}
+?>
 </div>
 
 <!-- MAIN IMAGE -->
 <div class="col-md-5 text-center">
 <?php
-$mainImage = !empty($images)
-    ? '../'.$images[0]['image_url']
-    : '../uploads/no-image.jpg';
+$mainImage = '../uploads/no-image.jpg';
+
+foreach ($images as $img) {
+    if (!empty($img['is_main']) && $img['is_main'] == 1) {
+        $mainImage = '../'.$img['image_url'];
+        break;
+    }
+}
+
+// nếu không có is_main thì fallback ảnh đầu
+if ($mainImage === '../uploads/no-image.jpg' && !empty($images)) {
+    $mainImage = '../'.$images[0]['image_url'];
+}
 ?>
 <img id="mainProductImage" src="<?php echo $mainImage; ?>">
 </div>
@@ -243,7 +294,13 @@ $mainImage = !empty($images)
 </div>
 
 <div class="product-price my-3">
-    <?php echo number_format($product['price']); ?>₫
+    <?php if ($priceRange['min'] && $priceRange['max'] && $priceRange['min'] != $priceRange['max']) { ?>
+        <?php echo number_format($priceRange['min']); ?>₫
+        -
+        <?php echo number_format($priceRange['max']); ?>₫
+    <?php } else { ?>
+        <?php echo number_format($priceRange['min'] ?? $product['price']); ?>₫
+    <?php } ?>
 </div>
 
 <p><b>Danh mục:</b> <?php echo $category; ?></p>
@@ -476,6 +533,8 @@ document.querySelectorAll('.size-btn').forEach(btn=>{
         document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
         this.classList.add('active');
         document.getElementById('selectedSize').value = this.dataset.size;
+
+        updateVariantUI(); // Add here
     }
 });
 
@@ -485,6 +544,8 @@ document.querySelectorAll('.color-btn').forEach(btn=>{
         document.querySelectorAll('.color-btn').forEach(b=>b.classList.remove('active'));
         this.classList.add('active');
         document.getElementById('selectedColor').value = this.dataset.color;
+
+        updateVariantUI(); // Adđ here
     }
 });
 
@@ -564,6 +625,158 @@ function updateCartCount(count){
 
     badge.innerText = count;
 }
+
+let variants = <?php echo json_encode($variants); ?>;
+console.log(variants);
+
+function updateVariantPrice() {
+    let size = document.getElementById('selectedSize').value;
+    let color = document.getElementById('selectedColor').value;
+
+    let match = variants.find(v => {
+        let okSize = !size || (v.size && v.size == size);
+        let okColor = !color || (v.color && v.color == color);
+        return okSize && okColor;
+    });
+
+    if (match && match.price) {
+        document.querySelector('.product-price').innerText =
+            Number(match.price).toLocaleString() + '₫';
+    } else {
+        resetPrice();
+    }
+}
+
+function resetPrice(){
+    document.querySelector('.product-price').innerText =
+        <?php
+        if ($priceRange['min'] && $priceRange['max'] && $priceRange['min'] != $priceRange['max']) {
+            echo json_encode(number_format($priceRange['min']).'₫ - '.number_format($priceRange['max']).'₫');
+        } else {
+            echo json_encode(number_format($product['price']).'₫');
+        }
+?>;
+}
+
+function updateVariantUI() {
+
+    let size = document.getElementById('selectedSize').value;
+    let color = document.getElementById('selectedColor').value;
+
+    let hasSize = <?php echo $hasSize ? 'true' : 'false'; ?>;
+    let hasColor = <?php echo $hasColor ? 'true' : 'false'; ?>;
+
+    // =============================
+    // CASE 1: sản phẩm có cả Size + Màu
+    // =============================
+    if (hasSize && hasColor) {
+
+        // chưa chọn màu
+        if (!color) {
+            resetImageAndPrice();
+            return;
+        }
+
+        // chỉ chọn màu
+        if (!size) {
+
+            let colorVariant = variants.find(v => v.color == color);
+
+            if (colorVariant && colorVariant.image) {
+                document.getElementById("mainProductImage").src =
+                    "../" + colorVariant.image;
+            }
+
+            resetPrice();
+            return;
+        }
+
+        // chọn đủ size + màu
+        let match = variants.find(v =>
+            v.size == size &&
+            v.color == color
+        );
+
+        if (match) {
+
+            if (match.image) {
+                document.getElementById("mainProductImage").src =
+                    "../" + match.image;
+            }
+
+            if (match.price) {
+                document.querySelector(".product-price").innerText =
+                    Number(match.price).toLocaleString() + "₫";
+            }
+
+        } else {
+            resetImageAndPrice();
+        }
+
+        return;
+    }
+
+    // =============================
+    // CASE 2: chỉ có Màu
+    // =============================
+    if (!hasSize && hasColor) {
+
+        if (!color) {
+            resetImageAndPrice();
+            return;
+        }
+
+        let match = variants.find(v => v.color == color);
+
+        if (match) {
+
+            if (match.image) {
+                document.getElementById("mainProductImage").src =
+                    "../" + match.image;
+            }
+
+            if (match.price) {
+                document.querySelector(".product-price").innerText =
+                    Number(match.price).toLocaleString() + "₫";
+            }
+
+        } else {
+            resetImageAndPrice();
+        }
+
+        return;
+    }
+
+    // =============================
+    // CASE 3: chỉ có Size
+    // =============================
+    if (hasSize && !hasColor) {
+
+        if (!size) {
+            resetImageAndPrice();
+            return;
+        }
+
+        let match = variants.find(v => v.size == size);
+
+        if (match) {
+
+            if (match.image) {
+                document.getElementById("mainProductImage").src =
+                    "../" + match.image;
+            }
+
+            if (match.price) {
+                document.querySelector(".product-price").innerText =
+                    Number(match.price).toLocaleString() + "₫";
+            }
+
+        } else {
+            resetImageAndPrice();
+        }
+    }
+}
+
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

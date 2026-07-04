@@ -13,7 +13,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $user = $userModel->login($email, $password);
 
+    // if ($user) {
+    //     $_SESSION['user'] = $user;
+
+    //     if ($user['role'] == 1) {
+    //         header('Location: ../views/admin/admin_dashboard.php');
+    //     } else {
+    //         header('Location: ../views/index.php');
+    //     }
+
+    //     exit;
+    // } else {
+    //     $_SESSION['login_error'] = 'Sai email hoặc mật khẩu!';
+    //     header('Location: ../views/login.php');
+    //     exit;
+    // }
+
     if ($user) {
+        // Tạo Session ID mới
+        session_regenerate_id(true);
+
+        // Lưu thông tin người dùng
         $_SESSION['user'] = $user;
 
         if ($user['role'] == 1) {
@@ -22,10 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             header('Location: ../views/index.php');
         }
 
-        exit;
-    } else {
-        $_SESSION['login_error'] = 'Sai email hoặc mật khẩu!';
-        header('Location: ../views/login.php');
         exit;
     }
 }

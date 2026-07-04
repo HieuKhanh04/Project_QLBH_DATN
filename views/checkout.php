@@ -10,6 +10,28 @@ $user = $_SESSION['user'] ?? null;
 $cart = $_SESSION['cart'] ?? [];
 $buyNow = $_SESSION['buy_now'] ?? null;
 
+$vouchers = [];
+if (!empty($user['user_id'])) {
+    $stmtVoucher = $conn->prepare("
+        SELECT
+            p.*
+        FROM user_vouchers uv
+        INNER JOIN promotions p
+            ON uv.promotion_id = p.promotion_id
+        WHERE
+            uv.user_id = ?
+            AND uv.is_used = 0
+            AND p.status = 'active'
+            AND CURDATE() BETWEEN p.start_date AND p.end_date
+            AND p.used_count < p.quantity
+        ORDER BY p.end_date ASC
+    ");
+    $stmtVoucher->execute([
+        $user['user_id'],
+    ]);
+    $vouchers = $stmtVoucher->fetchAll(PDO::FETCH_ASSOC);
+}
+
 if (isset($_GET['ids']) && !empty($_GET['ids'])) {
     $_SESSION['checkout_ids'] = explode(',', $_GET['ids']);
 }
@@ -32,25 +54,53 @@ if ($buyNow) {
             continue;
         }
 
-        $stmtImage = $conn->prepare('
-            SELECT image_url
-            FROM product_images
+        $stmtVariant = $conn->prepare('
+            SELECT *
+            FROM product_variants
             WHERE product_id = ?
-            ORDER BY is_main DESC, id ASC
-            LIMIT 1
-        ');
+            ');
 
-        $stmtImage->execute([$productId]);
+        $stmtVariant->execute([$productId]);
 
-        $image = $stmtImage->fetchColumn();
+        $variant = null;
+
+        while ($row = $stmtVariant->fetch(PDO::FETCH_ASSOC)) {
+            $sizeMatch =
+                ($size == '' || $row['size'] == $size);
+
+            $colorMatch =
+                ($color == '' || $row['color'] == $color);
+
+            if ($sizeMatch && $colorMatch) {
+                $variant = $row;
+                break;
+            }
+        }
+
+        $image = '../uploads/no-image.jpg';
+        if ($variant && !empty($variant['image'])) {
+            $image = '../'.$variant['image'];
+        } else {
+            $stmtImage = $conn->prepare('
+                SELECT image_url
+                FROM product_images
+                WHERE product_id=?
+                ORDER BY is_main DESC,id ASC
+                LIMIT 1
+            ');
+            $stmtImage->execute([$productId]);
+            $img = $stmtImage->fetchColumn();
+            if ($img) {
+                $image = '../'.$img;
+            }
+        }
 
         if (!$image) {
             $image = 'https://picsum.photos/400/500?random='.$productId;
-        } else {
-            $image = '../'.$image;
         }
 
-        $subtotal = $product['price'] * $quantity;
+        $price = $variant['price'] ?? $product['price'];
+        $subtotal = $price * $quantity;
 
         $total += $subtotal;
 
@@ -58,7 +108,7 @@ if ($buyNow) {
             'cart_key' => $cartKey,
             'product_id' => $productId,
             'name' => $product['name'],
-            'price' => $product['price'],
+            'price' => $price,
             'quantity' => $quantity,
             'size' => $size,
             'color' => $color,
@@ -85,25 +135,53 @@ if ($buyNow) {
             continue;
         }
 
-        $stmtImage = $conn->prepare('
-            SELECT image_url
-            FROM product_images
+        $stmtVariant = $conn->prepare('
+            SELECT *
+            FROM product_variants
             WHERE product_id = ?
-            ORDER BY is_main DESC, id ASC
-            LIMIT 1
-        ');
+            ');
 
-        $stmtImage->execute([$productId]);
+        $stmtVariant->execute([$productId]);
 
-        $image = $stmtImage->fetchColumn();
+        $variant = null;
+
+        while ($row = $stmtVariant->fetch(PDO::FETCH_ASSOC)) {
+            $sizeMatch =
+                ($size == '' || $row['size'] == $size);
+
+            $colorMatch =
+                ($color == '' || $row['color'] == $color);
+
+            if ($sizeMatch && $colorMatch) {
+                $variant = $row;
+                break;
+            }
+        }
+
+        $image = '../uploads/no-image.jpg';
+        if ($variant && !empty($variant['image'])) {
+            $image = '../'.$variant['image'];
+        } else {
+            $stmtImage = $conn->prepare('
+                SELECT image_url
+                FROM product_images
+                WHERE product_id=?
+                ORDER BY is_main DESC,id ASC
+                LIMIT 1
+            ');
+            $stmtImage->execute([$productId]);
+            $img = $stmtImage->fetchColumn();
+            if ($img) {
+                $image = '../'.$img;
+            }
+        }
 
         if (!$image) {
             $image = 'https://picsum.photos/400/500?random='.$productId;
-        } else {
-            $image = '../'.$image;
         }
 
-        $subtotal = $product['price'] * $quantity;
+        $price = $variant['price'] ?? $product['price'];
+        $subtotal = $price * $quantity;
 
         $total += $subtotal;
 
@@ -111,7 +189,7 @@ if ($buyNow) {
             'cart_key' => $cartKey,
             'product_id' => $productId,
             'name' => $product['name'],
-            'price' => $product['price'],
+            'price' => $price,
             'quantity' => $quantity,
             'size' => $size,
             'color' => $color,
@@ -645,8 +723,8 @@ if ($buyNow) {
 
                     <div
                         class="product-price mt-1"
-                        id="subtotal-<?php echo $item['cart_key']; ?>">
-
+                        id="subtotal-<?php echo $item['cart_key']; ?>"
+                        data-value="<?php echo $item['subtotal']; ?>">
                         <?php echo number_format($item['subtotal']); ?>₫
                     </div>
 
@@ -697,7 +775,7 @@ if ($buyNow) {
         <?php if (!empty($vouchers)) { ?>
             <?php foreach ($vouchers as $v) { ?>
                 <div class="voucher-card"
-                     onclick="selectVoucher('<?php echo $v['code']; ?>')">
+                    onclick="selectVoucher('<?php echo $v['code']; ?>')">
 
                     <div class="voucher-left">
                         <div class="voucher-code">
@@ -851,6 +929,13 @@ function selectProvince(code,name){
     selectedProvinceCode = code;
     selectedProvinceName = name;
 
+    selectedDistrictCode = '';
+    selectedDistrictName = '';
+    selectedWardName = '';
+
+    document.getElementById("shippingFee").innerText = "0₫";
+    document.getElementById("shippingPriceText").innerText = "0₫";
+
     // document.getElementById("provinceTab").innerText = name;
 
     fetch(
@@ -865,12 +950,18 @@ function selectProvince(code,name){
             .getElementById('districtTab')
             .click();
     });
+    recalculateTotal();
 }
 
 function selectDistrict(code,name){
 
     selectedDistrictCode = code;
     selectedDistrictName = name;
+
+    selectedWardName = '';
+
+    document.getElementById("shippingFee").innerText = "0₫";
+    document.getElementById("shippingPriceText").innerText = "0₫";
 
     // document.getElementById("districtTab").innerText = name;
 
@@ -886,17 +977,7 @@ function selectDistrict(code,name){
             .getElementById('wardTab')
             .click();
     });
-}
-
-function selectWard(name){
-
-    selectedWardName = name;
-
-    // document.getElementById("wardTab").innerText = name;
-    document.getElementById('shippingMethodBox')
-        .style.display = 'block';
-
-    updateAddress();
+    recalculateTotal();
 }
 
 function renderWard(data)
@@ -964,31 +1045,24 @@ function selectWard(name)
     calculateShipping();
 }
 
-function calculateShipping()
-{
+function calculateShipping(){
+
     let shipping = 30000;
 
-    if (
-        selectedProvinceName === 'Hà Nội' ||
-        selectedProvinceName === 'Thành phố Hồ Chí Minh'
-    ) {
-        shipping = 15000;
+    if(
+        selectedProvinceName=="Hà Nội" ||
+        selectedProvinceName=="Thành phố Hồ Chí Minh"
+    ){
+        shipping=15000;
     }
 
-    document.getElementById('shippingFee').innerText =
-        shipping.toLocaleString() + '₫';
+    document.getElementById("shippingFee").innerText =
+        shipping.toLocaleString()+"₫";
 
-    document.getElementById('shippingPriceText').innerText =
-        shipping.toLocaleString() + '₫';
+    document.getElementById("shippingPriceText").innerText =
+        shipping.toLocaleString()+"₫";
 
-    let productTotal =
-        <?php echo (int) $total; ?>;
-
-    let finalTotal =
-        productTotal + shipping;
-
-    document.getElementById('finalTotal').innerText =
-        finalTotal.toLocaleString() + '₫';
+    recalculateTotal();
 }
 
 function renderDistrict(data)
@@ -1107,17 +1181,22 @@ document.addEventListener('click', function(e) {
     let inc = e.target.closest('.increase-btn');
     let dec = e.target.closest('.decrease-btn');
 
+    console.log("CLICK");
+
     if (inc) {
+        console.log("Increase:", inc.dataset.cartKey);
         updateQuantity(inc.dataset.cartKey, 'increase');
     }
 
     if (dec) {
+        console.log("Decrease:", dec.dataset.cartKey);
         updateQuantity(dec.dataset.cartKey, 'decrease');
     }
 });
 
 function updateQuantity(cartKey, action)
 {
+    console.log("Start fetch");
     fetch('../controllers/update_checkout_quantity.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -1141,31 +1220,40 @@ function updateQuantity(cartKey, action)
     });
 }
 
-function recalculateTotal()
-{
+function recalculateTotal() {
+
     let total = 0;
 
-    document.querySelectorAll('[id^="subtotal-"]').forEach(item => {
-        total += parseInt(item.dataset.value || 0);
-    });
+    document.querySelectorAll("[id^='subtotal-']")
+        .forEach(el => {
 
-    let shipping = parseInt(
-        document.getElementById('shippingFee')
-        .innerText.replace(/[^\d]/g,'')
-    ) || 0;
+            total += parseInt(el.dataset.value || 0);
 
-    let final = total + shipping - discountAmount;
+        });
 
-    if (final < 0) final = 0;
+    let shipping =
+        parseInt(
+            document
+            .getElementById("shippingFee")
+            .innerText.replace(/[^\d]/g,"")
+        ) || 0;
 
-    document.getElementById('productTotal').innerText =
-        total.toLocaleString() + '₫';
+    let final =
+        total
+        + shipping
+        - discountAmount;
 
-    document.getElementById('discountText').innerText =
-        '-' + discountAmount.toLocaleString() + '₫';
+    if(final < 0)
+        final = 0;
 
-    document.getElementById('finalTotal').innerText =
-        final.toLocaleString() + '₫';
+    document.getElementById("productTotal").innerText =
+        total.toLocaleString()+"₫";
+
+    document.getElementById("discountValue").innerText =
+        "-"+discountAmount.toLocaleString()+"₫";
+
+    document.getElementById("finalTotal").innerText =
+        final.toLocaleString()+"₫";
 }
 
 let discountAmount = 0;
@@ -1180,7 +1268,7 @@ function toggleVoucherList() {
 /* CLICK SELECT */
 function selectVoucher(code) {
     document.getElementById('voucherInput').value = code;
-    applyVoucher();
+    applyVoucher(); // auto apply luôn
 }
 
 /* APPLY VOUCHER */
@@ -1189,12 +1277,14 @@ function applyVoucher() {
     let code = document.getElementById('voucherInput').value.trim();
     if (!code) return;
 
-    fetch('../controllers/apply_voucher.php', {
+    let total = calculateCurrentTotal(); // OK sau khi thêm hàm
+
+    fetch('../controllers/VoucherController.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'code=' + code
+        body: `action=apply&code=${code}&total=${total}`
     })
-    .then(res => res.json())
+    .then(r => r.json())
     .then(data => {
 
         if (!data.success) {
@@ -1202,12 +1292,11 @@ function applyVoucher() {
             return;
         }
 
-        discountAmount = parseInt(data.discount || 0);
+        discountAmount = data.discount;
         appliedVoucher = data.voucher;
 
-        // UI active voucher
         document.getElementById('activeVoucher').style.display = 'block';
-        document.getElementById('activeVoucherCode').innerText = code;
+        document.getElementById('activeVoucherCode').innerText = data.voucher.code;
 
         recalculateTotal();
     });
@@ -1222,51 +1311,21 @@ function removeVoucher() {
     document.getElementById('voucherInput').value = '';
     document.getElementById('activeVoucher').style.display = 'none';
 
+    document.getElementById('discountValue').innerText = '0₫';
+
     recalculateTotal();
 }
 
-let discount = 0;
-
-function applyDiscount(type, value)
+function calculateCurrentTotal()
 {
-    let productTotal =
-        parseInt(document.getElementById('productTotal')
-        .innerText.replace(/[^\d]/g, '')) || 0;
+    let total = 0;
 
-    let shipping =
-        parseInt(document.getElementById('shippingFee')
-        .innerText.replace(/[^\d]/g, '')) || 0;
+    document.querySelectorAll("[id^='subtotal-']")
+        .forEach(el => {
+            total += parseFloat(el.dataset.value || 0);
+        });
 
-    if (type === 'percent') {
-        discount = productTotal * value / 100;
-    }
-
-    if (type === 'fixed') {
-        discount = value;
-    }
-
-    document.getElementById('discountValue').innerText =
-        '-' + discount.toLocaleString() + '₫';
-
-    updateFinalTotal();
-}
-
-function updateFinalTotal()
-{
-    let productTotal = 0;
-
-    document.querySelectorAll('[id^="subtotal-"]').forEach(el => {
-        productTotal += parseInt(el.innerText.replace(/[^\d]/g, '')) || 0;
-    });
-
-    let shipping =
-        parseInt(document.getElementById('shippingFee')
-        .innerText.replace(/[^\d]/g, '')) || 0;
-
-    let finalTotal = productTotal + shipping - discount;
-
-    document.getElementById('finalTotal').innerText =
-        finalTotal.toLocaleString() + '₫';
+    return total;
 }
 
 </script>

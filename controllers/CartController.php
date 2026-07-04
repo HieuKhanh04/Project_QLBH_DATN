@@ -1,17 +1,17 @@
 <?php
 
 session_start();
+require_once '../config/database.php';
+require_once '../models/ProductModel.php';
 
-/* =========================
-   INIT CART
-========================= */
+$productModel = new ProductModel($conn);
+
+/* INIT CART */
 if (!isset($_SESSION['cart']) || !is_array($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
 }
 
-/* =========================
-   COMMON FUNCTIONS
-========================= */
+/* COMMON FUNCTIONS */
 function calculateCartCount($cart)
 {
     $count = 0;
@@ -22,9 +22,7 @@ function calculateCartCount($cart)
     return $count;
 }
 
-/* =========================
-   AJAX ADD (POST ONLY - CLEAN)
-========================= */
+/* AJAX ADD (POST ONLY - CLEAN) */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_add_cart'])) {
     header('Content-Type: application/json');
 
@@ -32,6 +30,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_add_cart'])) {
     $size = trim($_POST['size'] ?? '');
     $color = trim($_POST['color'] ?? '');
     $quantity = max(1, (int) ($_POST['quantity'] ?? 1));
+
+    $price = $productModel->getFinalPrice($productId, $size, $color);
+
+    if ($price < 0) {
+        $price = 0;
+    }
 
     if ($productId <= 0) {
         echo json_encode([
@@ -51,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_add_cart'])) {
             'product_id' => $productId,
             'size' => $size,
             'color' => $color,
+            'price' => $price,   // THÊM QUAN TRỌNG
             'quantity' => $quantity,
         ];
     }
@@ -58,6 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_add_cart'])) {
     echo json_encode([
         'success' => true,
         'count' => calculateCartCount($_SESSION['cart']),
+        'total' => array_sum(array_map(function ($item) {
+            return $item['price'] * $item['quantity'];
+        }, $_SESSION['cart'])),
     ]);
     exit;
 }
@@ -68,6 +76,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_add_cart'])) {
 $id = (int) ($_GET['id'] ?? 0);
 $action = $_GET['action'] ?? '';
 $redirect = $_GET['redirect'] ?? '';
+
+$size = trim($_GET['size'] ?? '');
+$color = trim($_GET['color'] ?? '');
+$quantity = max(1, (int) ($_GET['quantity'] ?? 1));
 
 /* =========================
    ACTION HANDLER
@@ -81,6 +93,8 @@ switch ($action) {
         $color = trim($_GET['color'] ?? '');
         $quantity = max(1, (int) ($_GET['quantity'] ?? 1));
 
+        $price = $productModel->getFinalPrice($id, $size, $color);
+
         if ($id > 0) {
             $cartKey = $id.'_'.$size.'_'.$color;
 
@@ -91,6 +105,7 @@ switch ($action) {
                     'product_id' => $id,
                     'size' => $size,
                     'color' => $color,
+                    'price' => $price,   // 🔥 THÊM
                     'quantity' => $quantity,
                 ];
             }
@@ -105,6 +120,8 @@ switch ($action) {
         $color = trim($_GET['color'] ?? '');
         $quantity = max(1, (int) ($_GET['quantity'] ?? 1));
 
+        $price = $productModel->getFinalPrice($id, $size, $color);
+
         $key = $id.'_'.$size.'_'.$color;
 
         // $_SESSION['buy_now'] = [
@@ -115,11 +132,18 @@ switch ($action) {
         //         'quantity' => $quantity,
         //     ],
         // ];
-        $_SESSION['buy_now'][$key] = [
-            'product_id' => $id,
-            'size' => $size,
-            'color' => $color,
-            'quantity' => $quantity,
+        // Xóa sản phẩm Mua ngay cũ
+        $_SESSION['buy_now'] = [];
+
+        // Lưu sản phẩm mới
+        $_SESSION['buy_now'] = [
+            $key => [
+                'product_id' => $id,
+                'size' => $size,
+                'color' => $color,
+                'price' => $price,
+                'quantity' => $quantity,
+            ],
         ];
 
         header('Location: ../views/checkout.php');
@@ -172,6 +196,9 @@ if (isset($_GET['ajax'])) {
     echo json_encode([
         'success' => true,
         'count' => calculateCartCount($_SESSION['cart']),
+        'total' => array_sum(array_map(function ($item) {
+            return $item['price'] * $item['quantity'];
+        }, $_SESSION['cart'])),
         'cart' => $_SESSION['cart'],
     ]);
     exit;

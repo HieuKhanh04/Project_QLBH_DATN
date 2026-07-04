@@ -1,7 +1,6 @@
 <?php
 
 session_start();
-
 require_once '../config/database.php';
 
 /* =========================
@@ -38,15 +37,11 @@ if (
 }
 
 /* =========================
-   MUA NGAY HAY GIỎ HÀNG
+   GIỎ HÀNG / BUY NOW
 ========================= */
 
-$isBuyNow = false;
-
-if (!empty($_SESSION['buy_now'])) {
-    $isBuyNow = true;
-    $buyNowItems = $_SESSION['buy_now'];
-}
+$isBuyNow = !empty($_SESSION['buy_now']);
+$buyNowItems = $_SESSION['buy_now'] ?? [];
 
 $checkoutIds = $_SESSION['checkout_ids'] ?? [];
 $cart = $_SESSION['cart'] ?? [];
@@ -55,34 +50,16 @@ if (!$isBuyNow && empty($checkoutIds)) {
     exit('Không có sản phẩm để thanh toán');
 }
 
-// /* =========================
-//    GIỎ HÀNG ĐƯỢC CHỌN
-// ========================= */
-
-// $checkoutIds = $_SESSION['checkout_ids'] ?? [];
-// $cart = $_SESSION['cart'] ?? [];
-
-// if (empty($checkoutIds)) {
-//     exit('Không có sản phẩm để thanh toán');
-// }
+/* =========================
+   TÍNH ORDER ITEMS
+========================= */
 
 $orderItems = [];
-
 $totalPrice = 0;
 $totalQuantity = 0;
 
-/* =========================
-   LẤY THÔNG TIN SẢN PHẨM
-========================= */
-
 if ($isBuyNow) {
-    // // Debug
-    // echo '<pre>';
-    // print_r($buyNowItems);
-    // echo '</pre>';
-    // exit;
-
-    foreach ($buyNowItems as $key => $item) {
+    foreach ($buyNowItems as $item) {
         if (!is_array($item)) {
             continue;
         }
@@ -94,32 +71,40 @@ if ($isBuyNow) {
             continue;
         }
 
-        if ($productId <= 0 || $quantity <= 0) {
-            continue;
-        }
-
-        $stmtProduct = $conn->prepare('
-            SELECT *
-            FROM products
-            WHERE product_id = ?
-            LIMIT 1
-        ');
-
-        $stmtProduct->execute([$productId]);
-
-        $product = $stmtProduct->fetch(PDO::FETCH_ASSOC);
+        $stmt = $conn->prepare('SELECT * FROM products WHERE product_id = ?');
+        $stmt->execute([$productId]);
+        $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$product) {
             continue;
         }
 
-        $price = (float) $product['price'];
+        $size = $item['size'] ?? '';
+        $color = $item['color'] ?? '';
+
+        $stmt = $conn->prepare("
+            SELECT price
+            FROM product_variants
+            WHERE product_id = ?
+            AND (size = ? OR (? = '' AND size IS NULL))
+            AND (color = ? OR (? = '' AND color IS NULL))
+            LIMIT 1
+        ");
+
+        $stmt->execute([$productId, $size, $size, $color, $color]);
+        $price = $stmt->fetchColumn();
+
+        if ($price === false) {
+            $price = $product['price'];
+        }
+
+        $price = (float) $price;
         $subtotal = $price * $quantity;
 
         $totalPrice += $subtotal;
         $totalQuantity += $quantity;
 
-        $stmtImage = $conn->prepare('
+        $stmt = $conn->prepare('
             SELECT image_url
             FROM product_images
             WHERE product_id = ?
@@ -127,13 +112,8 @@ if ($isBuyNow) {
             LIMIT 1
         ');
 
-        $stmtImage->execute([$productId]);
-
-        $image = $stmtImage->fetchColumn();
-
-        if (!$image) {
-            $image = 'uploads/no-image.jpg';
-        }
+        $stmt->execute([$productId]);
+        $image = $stmt->fetchColumn() ?: 'uploads/no-image.jpg';
 
         $orderItems[] = [
             'product_id' => $productId,
@@ -142,8 +122,8 @@ if ($isBuyNow) {
             'price' => $price,
             'subtotal' => $subtotal,
             'image' => $image,
-            'size' => $item['size'] ?? '',
-            'color' => $item['color'] ?? '',
+            'size' => $size,
+            'color' => $color,
         ];
     }
 } else {
@@ -161,65 +141,65 @@ if ($isBuyNow) {
             continue;
         }
 
-        $stmtProduct = $conn->prepare('
-            SELECT *
-            FROM products
-            WHERE product_id = ?
-            LIMIT 1
-        ');
-
-        $stmtProduct->execute([$productId]);
-
-        $product = $stmtProduct->fetch(PDO::FETCH_ASSOC);
+        $stmt = $conn->prepare('SELECT * FROM products WHERE product_id = ?');
+        $stmt->execute([$productId]);
+        $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$product) {
             continue;
         }
 
-        $price = (float) $product['price'];
+        $size = $item['size'] ?? '';
+        $color = $item['color'] ?? '';
+
+        $stmt = $conn->prepare("
+            SELECT price
+            FROM product_variants
+            WHERE product_id = ?
+            AND (size = ? OR (? = '' AND size IS NULL))
+            AND (color = ? OR (? = '' AND color IS NULL))
+            LIMIT 1
+        ");
+
+        $stmt->execute([$productId, $size, $size, $color, $color]);
+        $price = $stmt->fetchColumn();
+
+        if ($price === false) {
+            $price = $product['price'];
+        }
+
+        $price = (float) $price;
         $subtotal = $price * $quantity;
 
         $totalPrice += $subtotal;
         $totalQuantity += $quantity;
 
-        $stmtImage = $conn->prepare('
+        $stmt = $conn->prepare('
             SELECT image_url
             FROM product_images
             WHERE product_id = ?
-            ORDER BY is_main DESC,id ASC
+            ORDER BY is_main DESC, id ASC
             LIMIT 1
         ');
 
-        $stmtImage->execute([$productId]);
-
-        $image = $stmtImage->fetchColumn();
-
-        if (!$image) {
-            $image = 'uploads/no-image.jpg';
-        }
+        $stmt->execute([$productId]);
+        $image = $stmt->fetchColumn() ?: 'uploads/no-image.jpg';
 
         $orderItems[] = [
             'product_id' => $productId,
-
             'name' => $product['name'],
-
             'quantity' => $quantity,
-
             'price' => $price,
-
             'subtotal' => $subtotal,
-
             'image' => $image,
-
-            'size' => $item['size'] ?? '',
-
-            'color' => $item['color'] ?? '',
+            'size' => $size,
+            'color' => $color,
         ];
     }
 }
 
 /* =========================
-   KHÔNG CÓ SẢN PHẨM
+   CHECK SẢN PHẨM
 ========================= */
 
 if (empty($orderItems)) {
@@ -227,24 +207,52 @@ if (empty($orderItems)) {
 }
 
 /* =========================
-   TẠO MÃ ĐƠN HÀNG
+   VOUCHER (SAU TOTAL)
 ========================= */
 
-$orderCode =
-    'ORD'.
-    date('YmdHis').
-    strtoupper(substr(md5(uniqid()), 0, 4));
+$discount = 0;
+$promotionId = null;
+
+if (!empty($_SESSION['voucher'])) {
+    $promotionId = (int) ($_SESSION['voucher']['promotion_id'] ?? 0);
+
+    $stmt = $conn->prepare('
+        SELECT discount_type, discount_value
+        FROM promotions
+        WHERE promotion_id = ?
+    ');
+
+    $stmt->execute([$promotionId]);
+    $promo = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($promo) {
+        if ($promo['discount_type'] === 'percent') {
+            $discount = $totalPrice * $promo['discount_value'] / 100;
+        } else {
+            $discount = $promo['discount_value'];
+        }
+    }
+}
+
+/* APPLY DISCOUNT */
+$totalPrice -= $discount;
+
+if ($totalPrice < 0) {
+    $totalPrice = 0;
+}
+
+/* =========================
+   CREATE ORDER CODE
+========================= */
+
+$orderCode = 'ORD'.date('YmdHis').strtoupper(substr(md5(uniqid()), 0, 4));
 
 try {
     $conn->beginTransaction();
 
-    /* =========================
-       INSERT ORDER
-    ========================= */
-
-    $stmtOrder = $conn->prepare("
-        INSERT INTO orders
-        (
+    /* INSERT ORDER */
+    $stmt = $conn->prepare("
+        INSERT INTO orders (
             order_code,
             user_id,
             total_price,
@@ -258,15 +266,10 @@ try {
             payment_method,
             payment_status
         )
-        VALUES
-        (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-            'COD',
-            'unpaid'
-        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'COD', 'unpaid')
     ");
 
-    $stmtOrder->execute([
+    $stmt->execute([
         $orderCode,
         $userId,
         $totalPrice,
@@ -281,13 +284,9 @@ try {
 
     $orderId = $conn->lastInsertId();
 
-    /* =========================
-       INSERT ORDER DETAILS
-    ========================= */
-
-    $stmtDetail = $conn->prepare('
-        INSERT INTO order_details
-        (
+    /* INSERT ORDER DETAILS */
+    $stmt = $conn->prepare('
+        INSERT INTO order_details (
             order_id,
             product_id,
             name,
@@ -298,14 +297,11 @@ try {
             subtotal,
             image
         )
-        VALUES
-        (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?
-        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ');
 
     foreach ($orderItems as $item) {
-        $stmtDetail->execute([
+        $stmt->execute([
             $orderId,
             $item['product_id'],
             $item['name'],
@@ -318,34 +314,24 @@ try {
         ]);
     }
 
-    /* =========================
-       XÓA GIỎ HÀNG ĐÃ THANH TOÁN
-    ========================= */
+    /* CLEAR VOUCHER */
+    unset($_SESSION['voucher']);
 
+    /* CLEAR CART */
     if ($isBuyNow) {
         unset($_SESSION['buy_now']);
     } else {
-        foreach ($checkoutIds as $cartKey) {
-            if (isset($_SESSION['cart'][$cartKey])) {
-                unset($_SESSION['cart'][$cartKey]);
-            }
+        foreach ($checkoutIds as $key) {
+            unset($_SESSION['cart'][$key]);
         }
         unset($_SESSION['checkout_ids']);
     }
 
     $conn->commit();
 
-    header(
-        'Location: ../views/order_success.php?order_id='.
-        $orderId
-    );
-
+    header("Location: ../views/order_success.php?order_id=$orderId");
     exit;
 } catch (Exception $e) {
     $conn->rollBack();
-
-    exit(
-        'Lỗi tạo đơn hàng: '.
-        $e->getMessage()
-    );
+    exit('Lỗi tạo đơn hàng: '.$e->getMessage());
 }

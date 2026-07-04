@@ -8,23 +8,42 @@ $productModel = new ProductModel($conn);
 /* ADD PRODUCT */
 if (isset($_POST['add_product'])) {
     $name = $_POST['name'];
-    $price = $_POST['price'];
+    // $price = $_POST['price'];
     $description = $_POST['description'];
     $category_id = $_POST['category_id'];
 
-    $size = $_POST['size'];
-    $color = $_POST['color'];
-    $quantity = $_POST['quantity'];
+    // $size = $_POST['size'];
+    // $color = $_POST['color'];
+    // $quantity = $_POST['quantity'];
 
-    $image = $_FILES['image']['name'];
-    $tmp = $_FILES['image']['tmp_name'];
-    $uploadPath = '../../uploads/products/'.$image;
-    move_uploaded_file(
-        $tmp,
-        $uploadPath
-    );
+    //    UPLOAD IMAGE
+    $imageName = null;
 
-    $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name)));
+    if (!empty($_FILES['image']['name'])) {
+        $fileName = basename($_FILES['image']['name']);
+        $imageName = time().'_'.$fileName;
+
+        $uploadDir = __DIR__.'/../../uploads/products/';
+        $uploadPath = $uploadDir.$imageName;
+
+        // tạo thư mục nếu chưa có
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        // check upload hợp lệ
+        if (is_uploaded_file($_FILES['image']['tmp_name'])) {
+            if (!move_uploaded_file($_FILES['image']['tmp_name'], $uploadPath)) {
+                exit('Upload ảnh thất bại');
+            }
+        } else {
+            exit('File upload không hợp lệ');
+        }
+    }
+
+    // SLUG
+    // $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name)));
+    $slug = (string) preg_replace('/[^A-Za-z0-9-]+/', '-', strtolower(trim($name)));
 
     /* PRODUCTS */
     $stmt = $conn->prepare('
@@ -42,20 +61,20 @@ if (isset($_POST['add_product'])) {
 
     $product_id = $conn->lastInsertId();
 
-    /* VARIANT */
-    $stmt = $conn->prepare('
-        INSERT INTO product_variants
-        (product_id, size, color, price, quantity)
-        VALUES (?, ?, ?, ?, ?)
-    ');
+    // /* VARIANT */
+    // $stmt = $conn->prepare('
+    //     INSERT INTO product_variants
+    //     (product_id, size, color, price, quantity)
+    //     VALUES (?, ?, ?, ?, ?)
+    // ');
 
-    $stmt->execute([
-        $product_id,
-        $size,
-        $color,
-        $price,
-        $quantity,
-    ]);
+    // $stmt->execute([
+    //     $product_id,
+    //     $size,
+    //     $color,
+    //     $price,
+    //     $quantity,
+    // ]);
 
     /* IMAGE */
     $stmt = $conn->prepare('
@@ -66,7 +85,7 @@ if (isset($_POST['add_product'])) {
 
     $stmt->execute([
         $product_id,
-        $image,
+        'uploads/products/'.$imageName,
     ]);
 
     header('Location: products.php');
@@ -491,9 +510,9 @@ textarea{
                     Banner
                 </a>
 
-                <a href="#" class="sidebar-item">
-                    <i class="fa-regular fa-file-lines"></i>
-                    Bài viết
+                <a href="notifications.php" class="sidebar-item">
+                    <i class="fa-regular fa-bell"></i>
+                    Thông báo
                 </a>
 
                 <div class="menu-title">
@@ -505,7 +524,7 @@ textarea{
                     Cài đặt
                 </a>
 
-                <a href="#" class="sidebar-item">
+                <a href="account.php" class="sidebar-item">
                     <i class="fa-regular fa-user"></i>
                     Tài khoản
                 </a>
@@ -580,7 +599,15 @@ textarea{
 
                 <td>
                     <div class="product-info">
-                        <img src="https://picsum.photos/100?<?php echo $product['product_id']; ?>">
+                        <!-- <img src="https://picsum.photos/100?<?php echo $product['product_id']; ?>"> -->
+                        <?php if (!empty($product['image_url'])) { ?>
+                        <!-- <pre>
+                        <?php var_dump($product['image_url']); ?>
+                        </pre> -->
+                            <img src="../../<?php echo $product['image_url']; ?>">
+                        <?php } else { ?>
+                            <img src="../../uploads/no-image.png">
+                        <?php } ?>
                         <div>
                             <strong><?php echo $product['name']; ?></strong><br>
                             <small>ID: #SP<?php echo $product['product_id']; ?></small>
@@ -662,7 +689,7 @@ textarea{
                             required>
                     </div>
 
-                    <!-- GIÁ -->
+                    <!-- GIÁ
                     <div>
                         <label>Giá sản phẩm</label>
                         <input
@@ -670,7 +697,7 @@ textarea{
                             name="price"
                             placeholder="VD: 500000"
                             required>
-                    </div>
+                    </div> -->
 
                     <!-- CATEGORY -->
                     <div>
@@ -696,7 +723,7 @@ foreach ($cats as $cat) {
                         </select>
                     </div>
 
-                    <!-- SIZE -->
+                    <!-- SIZE
                     <div>
                         <label>Kích thước</label>
                         <input
@@ -706,7 +733,7 @@ foreach ($cats as $cat) {
                             required>
                     </div>
 
-                    <!-- COLOR -->
+                    COLOR
                     <div>
                         <label>Màu sắc</label>
                         <input
@@ -714,9 +741,9 @@ foreach ($cats as $cat) {
                             name="color"
                             placeholder="Đen, Trắng..."
                             required>
-                    </div>
+                    </div> -->
 
-                    <!-- QUANTITY -->
+                    <!-- QUANTITY
                     <div>
                         <label>Số lượng</label>
                         <input
@@ -724,15 +751,12 @@ foreach ($cats as $cat) {
                             name="quantity"
                             min="0"
                             required>
-                    </div>
+                    </div> -->
                 </div>
 
                 <!-- IMAGE -->
                 <div class="mb-3">
-                    <label>
-                        Ảnh sản phẩm
-                    </label>
-
+                    <label> Ảnh sản phẩm </label>
                     <input
                         type="file"
                         name="image"
@@ -743,9 +767,7 @@ foreach ($cats as $cat) {
 
                 <!-- DESCRIPTION -->
                 <div>
-                    <label>
-                        Mô tả
-                    </label>
+                    <label> Mô tả </label>
 
                     <textarea
                         name="description"

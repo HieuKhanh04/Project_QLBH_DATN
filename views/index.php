@@ -273,6 +273,7 @@ input[type=number] {
     <div class="row g-4">
 
         <?php foreach ($products as $p) { ?>
+        <?php $priceRange = $productModel->getPriceRange($p['product_id']); ?>
         <?php
             $variants = $productModel->getVariantsByProduct($p['product_id']);
 
@@ -300,7 +301,7 @@ input[type=number] {
                 <a href="product_detail.php?id=<?php echo $p['product_id']; ?>"
                    class="text-decoration-none text-dark">
 
-                    <img src="https://picsum.photos/500/600?random=<?php echo $p['product_id']; ?>">
+                   <img src="<?php echo !empty($p['image_url']) ? '../'.$p['image_url'] : '../assets/no-image.png'; ?>">
 
                     <div class="card-body">
                         <div class="product-name">
@@ -308,7 +309,13 @@ input[type=number] {
                         </div>
 
                         <div class="product-price mt-2">
-                            <?php echo number_format($p['price']); ?>₫
+                            <?php if ($priceRange['min_price'] == $priceRange['max_price']) { ?>
+                                <?php echo number_format($priceRange['min_price']); ?>₫
+                            <?php } else { ?>
+                                <?php echo number_format($priceRange['min_price']); ?>₫
+                                - 
+                                <?php echo number_format($priceRange['max_price']); ?>₫
+                            <?php } ?>
                         </div>
                     </div>
 
@@ -326,8 +333,8 @@ input[type=number] {
                                 onclick="openCartModal(this)"
                                 data-id="<?php echo $p['product_id']; ?>"
                                 data-name="<?php echo htmlspecialchars($p['name']); ?>"
-                                data-price="<?php echo $p['price']; ?>"
-                                data-image="https://picsum.photos/500/600?random=<?php echo $p['product_id']; ?>"
+                                data-price="<?php echo $priceRange['min_price']; ?>"
+                                data-image="<?php echo !empty($p['image_url']) ? '../'.ltrim($p['image_url'], '/') : '../assets/no-image.png'; ?>"
                                 data-has-variant="<?php echo $productModel->hasVariant($p['product_id']) ? 1 : 0; ?>"
                                 data-sizes='<?php echo json_encode(array_values($sizes)); ?>'
                                 data-colors='<?php echo json_encode(array_values($colors)); ?>'
