@@ -66,7 +66,7 @@ body{
 /* LAYOUT */
 .admin-container{display:flex;}
 
-/* ================= SIDEBAR (GIỮ NGUYÊN 100% THEO MẪU) ================= */
+/*  SIDEBAR (GIỮ NGUYÊN 100% THEO MẪU)  */
 .sidebar{
     width:260px;
     background:white;
@@ -134,7 +134,7 @@ body{
     margin-top:15px;
 }
 
-/* ================= CONTENT ================= */
+/*  CONTENT  */
 .main-content{
     flex:1;
     margin-left:260px;
@@ -238,7 +238,7 @@ body{
 
 <div class="admin-container">
 
-<!-- ================= SIDEBAR (ĐÃ FIX FULL QUẢN LÝ NỘI DUNG) ================= -->
+<!--  SIDEBAR (ĐÃ FIX FULL QUẢN LÝ NỘI DUNG)  -->
 <div class="sidebar">
 
     <a href="admin_dashboard.php" class="logo">
@@ -289,9 +289,9 @@ body{
                 Danh mục
             </a>
 
-            <a href="#">
-                <i class="fa-regular fa-image"></i>
-                Banner
+            <a href="collections.php">
+                <i class="fa-regular fa-images"></i>
+                Bộ sưu tập
             </a>
 
             <a href="notifications.php" class="sidebar-item">
@@ -311,7 +311,7 @@ body{
                 Tài khoản
             </a>
 
-            <a href="#">
+            <a href="activity_logs.php">
                 <i class="fa-regular fa-clock"></i>
                 Nhật ký hoạt động
             </a>
@@ -326,7 +326,7 @@ body{
 
 </div>
 
-<!-- ================= CONTENT ================= -->
+<!--  CONTENT  -->
 <div class="main-content">
 
     <div class="topbar">
@@ -343,7 +343,7 @@ body{
                 <strong>Admin</strong><br>
                 <small>Quản trị viên</small>
             </div>
-            <i class="fa-solid fa-chevron-down"></i>
+            <!-- <i class="fa-solid fa-chevron-down"></i> -->
         </div>
 
     </div>
@@ -368,7 +368,7 @@ body{
 
     </div>
 
-    <!-- ================= ANALYTICS DASHBOARD ================= -->
+    <!--  ANALYTICS DASHBOARD  -->
 
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px;">
 
@@ -430,7 +430,7 @@ body{
 </div>
 
 <script>
-    /* ================= LINE ================= */
+    /*  LINE  */
     new Chart(document.getElementById("lineChart"), {
         type: "line",
         data: {
@@ -446,7 +446,7 @@ body{
         }
     });
 
-    /* ================= BAR ================= */
+    /*  BAR  */
     new Chart(document.getElementById("barChart"), {
         type: "bar",
         data: {
@@ -459,7 +459,7 @@ body{
         }
     });
 
-    /* ================= PIE ================= */
+    /*  PIE  */
     new Chart(document.getElementById("pieChart"), {
         type: "doughnut",
         data: {

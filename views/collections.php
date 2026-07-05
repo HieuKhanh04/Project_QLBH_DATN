@@ -14,9 +14,7 @@ $collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $collection_id = $_GET['collection'] ?? 0;
 
 if ($collection_id > 0) {
-    $stmt = $conn->prepare('SELECT * FROM products WHERE collection_id = ?');
-    $stmt->execute([$collection_id]);
-    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $products = $productModel->getProductsByCollection($collection_id);
 } else {
     $products = $productModel->getAllProducts();
 }
@@ -220,6 +218,14 @@ body{
     justify-content:center;
 }
 
+.collection-card.active{
+    border:2px solid var(--pink);
+}
+
+.collection-card.active .collection-name{
+    color:#333;
+}
+
 </style>
 
 </head>
@@ -237,9 +243,9 @@ body{
 
         <div class="col-6 col-md-3 col-lg-2">
             <a href="collections.php"
-               class="collection-card d-block text-center p-2 shadow-sm">
+                class="collection-card d-block text-center p-2 shadow-sm <?php echo $collection_id == 0 ? 'active' : ''; ?>">
 
-                <img src="https://picsum.photos/200/200?random=1">
+                <img src="../uploads/collections/tat-ca-bo-suu-tap.jpg">
                 <div class="collection-name">Tất cả</div>
 
             </a>
@@ -250,9 +256,10 @@ body{
         <div class="col-6 col-md-3 col-lg-2">
 
             <a href="collections.php?collection=<?php echo $c['collection_id']; ?>"
-               class="collection-card d-block text-center p-2 shadow-sm">
-
-                <img src="<?php echo $c['image']; ?>">
+                class="collection-card d-block text-center p-2 shadow-sm <?php echo $collection_id == $c['collection_id'] ? 'active' : ''; ?>">
+                <img src="<?php echo !empty($c['image'])
+                    ? '../'.ltrim($c['image'], '/')
+                    : '../assets/no-image.png'; ?>">
                 <div class="collection-name">
                     <?php echo htmlspecialchars($c['name']); ?>
                 </div>

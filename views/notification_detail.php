@@ -5,12 +5,12 @@ session_start();
 require_once '../config/database.php';
 
 /* KIỂM TRA ĐĂNG NHẬP */
-if (!isset($_SESSION['user'])) {
+if (!isset($_SESSION['customer'])) {
     header('Location: login.php');
     exit;
 }
 
-$customerId = $_SESSION['user']['user_id'];
+$customerId = $_SESSION['customer']['user_id'];
 
 $id = (int) ($_GET['id'] ?? 0);
 

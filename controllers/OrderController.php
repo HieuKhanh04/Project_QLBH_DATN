@@ -12,7 +12,7 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 
-$userId = (int) ($_SESSION['user']['user_id'] ?? 0);
+$userId = (int) ($_SESSION['customer']['user_id'] ?? 0);
 
 if ($userId <= 0) {
     exit('Không tìm thấy người dùng');

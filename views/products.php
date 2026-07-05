@@ -238,7 +238,7 @@ input[type=number] {
         <div class="col-6 col-md-3 col-lg-2">
             <a href="products.php"
                class="category-card p-2 text-center <?php echo $activeCategory == 0 ? 'active' : ''; ?>">
-                <img src="https://picsum.photos/200?random=1">
+                <img src="../uploads/categories/danh-muc-tat-ca.jpg">
                 <div class="category-name">Tất cả</div>
             </a>
         </div>
@@ -247,7 +247,9 @@ input[type=number] {
         <div class="col-6 col-md-3 col-lg-2">
             <a href="products.php?category=<?php echo $c['category_id']; ?>"
                class="category-card p-2 text-center <?php echo $activeCategory == $c['category_id'] ? 'active' : ''; ?>">
-                <img src="https://picsum.photos/200?random=<?php echo $c['category_id']; ?>">
+                <img src="<?php echo !empty($c['image'])
+                    ? '../'.ltrim($c['image'], '/')
+                    : '../assets/no-image.png'; ?>">
                 <div class="category-name">
                     <?php echo htmlspecialchars($c['name']); ?>
                 </div>

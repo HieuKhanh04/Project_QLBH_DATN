@@ -24,10 +24,16 @@ if (!$order) {
 
 /* Lấy danh sách sản phẩm */
 $stmt = $conn->prepare('
-SELECT *
-FROM order_details
-WHERE order_id = ?
-ORDER BY id ASC
+SELECT
+    od.*,
+    pv.image AS variant_image
+FROM order_details od
+LEFT JOIN product_variants pv
+    ON od.product_id = pv.product_id
+    AND od.size = pv.size
+    AND od.color = pv.color
+WHERE od.order_id = ?
+ORDER BY od.id ASC
 ');
 
 $stmt->execute([$orderId]);
@@ -362,9 +368,9 @@ td{
                 Danh mục
             </a>
 
-            <a href="#">
-                <i class="fa-regular fa-image"></i>
-                Banner
+            <a href="collections.php">
+                <i class="fa-regular fa-images"></i>
+                Bộ sưu tập
             </a>
 
             <a href="notifications.php" class="sidebar-item">
@@ -384,7 +390,7 @@ td{
                 Tài khoản
             </a>
 
-            <a href="#">
+            <a href="activity_logs.php">
                 <i class="fa-regular fa-clock"></i>
                 Nhật ký hoạt động
             </a>
@@ -535,7 +541,10 @@ td{
                 <tr>
                     <td>
                         <div class="product">
-                            <img src="../../uploads/products/<?php echo htmlspecialchars($item['image'] ?: 'default.png'); ?>">
+                            <img src="../../<?php
+                                echo !empty($item['variant_image'])
+                                    ? ltrim($item['variant_image'], '/')
+                                    : 'uploads/no-image.jpg'; ?>">
                             <div>
                                 <strong>
                                     <?php echo htmlspecialchars($item['name']); ?>
@@ -560,8 +569,8 @@ td{
                     <td>
                         <?php
                             $price = $item['discount_price'] > 0
-                                ? $item['discount_price']
-                                : $item['price'];
+                ? $item['discount_price']
+                : $item['price'];
 
                 echo number_format($price);
                 ?> đ

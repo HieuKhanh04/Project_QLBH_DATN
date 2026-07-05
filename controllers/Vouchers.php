@@ -3,7 +3,7 @@ require_once '../config/database.php';
 
 header('Content-Type: application/json');
 
-$userId = $_SESSION['user']['user_id'] ?? 0;
+$userId = $_SESSION['customer']['user_id'] ?? 0;
 
 if (!$userId) {
     echo json_encode(['success' => false, 'message' => 'Chưa đăng nhập']);

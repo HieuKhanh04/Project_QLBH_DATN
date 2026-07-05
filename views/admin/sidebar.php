@@ -258,9 +258,9 @@ select{
                 Danh mục
             </a>
 
-            <a href="#">
-                <i class="fa-regular fa-image"></i>
-                Banner
+            <a href="collections.php">
+                <i class="fa-regular fa-images"></i>
+                Bộ sưu tập
             </a>
 
             <a href="notifications.php" class="sidebar-item">
@@ -282,7 +282,7 @@ select{
                 Tài khoản
             </a>
 
-            <a href="#">
+            <a href="activity_logs.php">
                 <i class="fa-regular fa-clock"></i>
                 Nhật ký hoạt động
             </a>

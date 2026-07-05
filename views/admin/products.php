@@ -2,6 +2,7 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../models/ProductModel.php';
+require_once '../../includes/activity_log.php';
 
 $productModel = new ProductModel($conn);
 
@@ -60,6 +61,12 @@ if (isset($_POST['add_product'])) {
     ]);
 
     $product_id = $conn->lastInsertId();
+    writeLog(
+        $conn,
+        'CREATE',
+        'Sản phẩm',
+        'Thêm sản phẩm #'.$product_id.' - '.$name
+    );
 
     // /* VARIANT */
     // $stmt = $conn->prepare('
@@ -113,13 +120,75 @@ if ($keyword != '') {
 }
 
 /* DELETE */
-if (isset($_GET['delete'])) {
-    $id = $_GET['delete'];
+$deleted = isset($_GET['deleted']) ? true : false;
+if (isset($_POST['delete'])) {
+    $id = $_POST['delete'];
 
-    $stmt = $conn->prepare('DELETE FROM products WHERE product_id = ?');
+    $stmt = $conn->prepare('SELECT name FROM products WHERE product_id = ?');
+    $stmt->execute([$id]);
+    $product = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Xóa ảnh vật lý của sản phẩm
+    $stmt = $conn->prepare('
+        SELECT image_url
+        FROM product_images
+        WHERE product_id = ?
+    ');
     $stmt->execute([$id]);
 
-    header('Location: products.php');
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $img) {
+        $file = '../../'.$img['image_url'];
+        if (file_exists($file)) {
+            unlink($file);
+        }
+    }
+
+    // Xóa ảnh của biến thể
+    $stmt = $conn->prepare('
+        SELECT image
+        FROM product_variants
+        WHERE product_id = ?
+    ');
+    $stmt->execute([$id]);
+
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $variant) {
+        if (!empty($variant['image'])) {
+            $file = '../../'.$variant['image'];
+            if (file_exists($file)) {
+                unlink($file);
+            }
+        }
+    }
+
+    // Xóa product_images
+    $stmt = $conn->prepare('
+        DELETE FROM product_images
+        WHERE product_id = ?
+    ');
+    $stmt->execute([$id]);
+
+    // Xóa product_variants
+    $stmt = $conn->prepare('
+        DELETE FROM product_variants
+        WHERE product_id = ?
+    ');
+    $stmt->execute([$id]);
+
+    // Cuối cùng xóa products
+    $stmt = $conn->prepare('
+        DELETE FROM products
+        WHERE product_id = ?
+    ');
+    $stmt->execute([$id]);
+
+    writeLog(
+        $conn,
+        'DELETE',
+        'Sản phẩm',
+        'Xóa sản phẩm #'.$id.' - '.($product['name'] ?? '')
+    );
+
+    header('Location: products.php?deleted=success');
     exit;
 }
 ?>
@@ -137,7 +206,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 
 <style>
 
-/* ================= RESET ================= */
+/* RESET */
 *{
     margin:0;
     padding:0;
@@ -149,12 +218,12 @@ body{
     background:#fff5f9;
 }
 
-/* ================= LAYOUT ================= */
+/* LAYOUT */
 .admin-container{
     display:flex;
 }
 
-/* ================= SIDEBAR ================= */
+/* SIDEBAR */
 .sidebar{
     width:260px;
     background:white;
@@ -223,7 +292,7 @@ body{
     margin-top:15px;
 }
 
-/* ================= CONTENT ================= */
+/* CONTENT */
 .main-content{
     flex:1;
     margin-left:260px;
@@ -307,7 +376,7 @@ body{
     cursor:pointer;
 }
 
-/* ================= TABLE ================= */
+/* TABLE */
 .product-table{
     background:white;
     border-radius:24px;
@@ -376,8 +445,7 @@ table td{
 .edit-btn{ background:#ffb400; }
 .delete-btn{ background:#ff4d6d; }
 
-/* MODAL */
-
+/*MODAL*/
 .modal{
     display:none;
     position:fixed;
@@ -385,65 +453,81 @@ table td{
     left:0;
     width:100%;
     height:100%;
-    background:rgba(0,0,0,.4);
-    z-index:9999;
-
+    background:rgba(0,0,0,.45);
     justify-content:center;
     align-items:center;
+    z-index:9999;
 }
 
 .modal-content{
-    width:700px;
-    background:white;
+    width:520px;
+    background:#fff;
     border-radius:24px;
     padding:30px;
 }
 
 .modal-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+    text-align:center;
     margin-bottom:20px;
 }
 
-.close-btn{
-    font-size:30px;
-    cursor:pointer;
+.modal-icon{
+    font-size:60px;
+    color:#dc3545;
+    margin-bottom:10px;
 }
 
-.form-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:15px;
-    margin-bottom:15px;
+.success-icon{
+    color:#23b26d;
 }
 
-.form-grid input,
-textarea{
+.form-group{
+    margin-bottom:18px;
+}
+
+.form-group label{
+    display:block;
+    margin-bottom:8px;
+    font-weight:bold;
+}
+
+.form-group input,
+.form-group select{
     width:100%;
-    padding:14px;
-    border:1px solid #eee;
+    padding:12px;
+    border:1px solid #ddd;
     border-radius:12px;
-    outline:none;
+    font-size:14px;
+}
+
+.modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:12px;
+    margin-top:25px;
+}
+
+.cancel-btn{
+    background:#eee;
+    border:none;
+    padding:12px 22px;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:bold;
 }
 
 .save-btn{
-    width:100%;
-    border:none;
     background:#ff4fa3;
     color:white;
-    padding:15px;
-    border-radius:14px;
-    margin-top:15px;
+    border:none;
+    padding:12px 22px;
+    border-radius:12px;
     cursor:pointer;
+    font-weight:bold;
 }
 
-.form-control{
-    width:100%;
-    padding:14px;
-    border:1px solid #eee;
-    border-radius:12px;
-    outline:none;
+.save-btn:hover{
+    background:#ff2d91;
 }
 
 </style>
@@ -453,10 +537,8 @@ textarea{
 <body>
 
 <div class="admin-container">
-
-<!-- SIDEBAR -->
-<div class="sidebar">
-
+    <!-- SIDEBAR -->
+    <div class="sidebar">
         <a href="admin_dashboard.php" class="logo">
             HAN STORE
         </a>
@@ -505,9 +587,9 @@ textarea{
                     Danh mục
                 </a>
 
-                <a href="#" class="sidebar-item">
-                    <i class="fa-regular fa-image"></i>
-                    Banner
+                <a href="collections.php">
+                    <i class="fa-regular fa-images"></i>
+                    Bộ sưu tập
                 </a>
 
                 <a href="notifications.php" class="sidebar-item">
@@ -529,7 +611,7 @@ textarea{
                     Tài khoản
                 </a>
 
-                <a href="#" class="sidebar-item">
+                <a href="activity_logs.php" class="sidebar-item">
                     <i class="fa-regular fa-clock"></i>
                     Nhật ký hoạt động
                 </a>
@@ -562,7 +644,7 @@ textarea{
                 <strong>Admin</strong><br>
                 <small>Quản trị viên</small>
             </div>
-            <i class="fa-solid fa-chevron-down"></i>
+            <!-- <i class="fa-solid fa-chevron-down"></i> -->
         </div>
     </div>
 
@@ -638,12 +720,11 @@ textarea{
                             </button>
                         </a>
 
-                        <a href="?delete=<?php echo $product['product_id']; ?>"
-                           onclick="return confirm('Xóa sản phẩm?')">
-
-                            <button type="button" class="delete-btn">
-                                <i class="fa fa-trash"></i>
-                            </button>
+                        <button type="button"
+                                class="delete-btn"
+                                onclick="openDeleteModal(<?php echo $product['product_id']; ?>)">
+                            <i class="fa fa-trash"></i>
+                        </button>
 
                         </a>
 
@@ -797,16 +878,91 @@ foreach ($cats as $cat) {
         {
             document.getElementById('productModal').style.display='none';
         }
+    </script>
 
-        window.onclick = function(e)
-        {
-            let modal = document.getElementById('productModal');
+    <div id="deleteModal" class="modal">
+        <div class="modal-content" style="width:520px;">
+            <div class="modal-header">
+                <i class="fa-solid fa-circle-xmark modal-icon"></i>
+                <h2>Xóa sản phẩm</h2>
+            </div>
 
-            if(e.target == modal)
-            {
+            <form method="POST">
+                <input
+                    type="hidden"
+                    name="delete"
+                    id="deleteId">
+
+                <p style="text-align:center;">
+                    Bạn có chắc muốn xóa sản phẩm này?
+                </p>
+
+                <div class="modal-actions">
+                    <button
+                        type="button"
+                        class="cancel-btn"
+                        onclick="closeDeleteModal()">
+                        Hủy
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="save-btn">
+                        Xóa
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="successModal" class="modal">
+        <div class="modal-content" style="width:520px;">
+            <div class="modal-header">
+                <i class="fa-solid fa-circle-check modal-icon success-icon"></i>
+                <h2 id="successText">
+                    Xóa sản phẩm thành công
+                </h2>
+            </div>
+
+            <div class="modal-actions">
+                <button
+                    class="save-btn"
+                    onclick="closeSuccessModal()">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openDeleteModal(id){
+            document.getElementById("deleteId").value=id;
+            document.getElementById("deleteModal").style.display="flex";
+        }
+        function closeDeleteModal(){
+            document.getElementById("deleteModal").style.display="none";
+        }
+        function closeSuccessModal(){
+            document.getElementById("successModal").style.display="none";
+        }
+        window.onclick=function(e){
+            if(e.target==document.getElementById("productModal")){
                 closeModal();
+            }
+            if(e.target==document.getElementById("deleteModal")){
+                closeDeleteModal();
             }
         }
     </script>
+
+    <?php if (isset($_GET['deleted'])) { ?>
+        <script>
+        window.onload=function(){
+            document.getElementById("successText").innerHTML =
+                "Xóa sản phẩm thành công";
+            document.getElementById("successModal").style.display="flex";
+        }
+        </script>
+    <?php } ?>
 </body>
 </html>

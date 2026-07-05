@@ -570,6 +570,7 @@ body{
     display:flex;
     justify-content:space-between;
     align-items:center;
+    text-decoration: none;
 }
 
 .top-row{
@@ -606,9 +607,7 @@ body{
 
 <div class="admin-container">
 
-<!-- =========================================================
-     SIDEBAR GIỮ NGUYÊN 100% TỪ FILE PRODUCTS CỦA BẠN
-     ========================================================= -->
+<!--SIDEBAR GIỮ NGUYÊN 100% TỪ FILE PRODUCTS CỦA BẠN -->
 <div class="sidebar">
 
         <a href="admin_dashboard.php" class="logo">
@@ -661,9 +660,9 @@ body{
                     Danh mục
                 </a>
 
-                <a href="#" class="sidebar-item">
-                    <i class="fa-regular fa-image"></i>
-                    Banner
+                <a href="collections.php">
+                    <i class="fa-regular fa-images"></i>
+                    Bộ sưu tập
                 </a>
 
                 <a href="notifications.php" class="sidebar-item">
@@ -685,7 +684,7 @@ body{
                     Tài khoản
                 </a>
 
-                <a href="#" class="sidebar-item">
+                <a href="activity_logs.php" class="sidebar-item">
                     <i class="fa-regular fa-clock"></i>
                     Nhật ký hoạt động
                 </a>
@@ -716,7 +715,6 @@ body{
                 <strong>Admin</strong><br>
                 <small>Quản trị viên</small>
             </div>
-            <i class="fa-solid fa-chevron-down"></i>
         </div>
     </div>
 
@@ -936,16 +934,13 @@ body{
                     </div>
                 </div>
 
-                <div class="report-btn">
+                <a href="reports.php" class="report-btn">
                     Xem báo cáo chi tiết
                     <i class="fa-solid fa-arrow-right"></i>
-                </div>
-
+                </a>
             </div>
-
         </div>
     </div>
-</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

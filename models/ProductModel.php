@@ -314,4 +314,51 @@ class ProductModel
 
         return max(0, $price);
     }
+
+    public function getProductsByCollection($collectionId)
+    {
+        $sql = '
+        SELECT
+            p.product_id,
+            p.name,
+            p.slug,
+            p.description,
+            p.status,
+            p.category_id,
+            p.collection_id,
+            p.created_at,
+            p.updated_at,
+            img.image_url,
+            COALESCE(SUM(v.quantity),0) AS total_quantity
+        FROM products p
+
+        LEFT JOIN product_variants v
+            ON p.product_id = v.product_id
+
+        LEFT JOIN product_images img
+            ON p.product_id = img.product_id
+            AND img.is_main = 1
+
+        WHERE p.collection_id = ?
+
+        GROUP BY
+            p.product_id,
+            p.name,
+            p.slug,
+            p.description,
+            p.status,
+            p.category_id,
+            p.collection_id,
+            p.created_at,
+            p.updated_at,
+            img.image_url
+
+        ORDER BY p.product_id DESC
+    ';
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$collectionId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

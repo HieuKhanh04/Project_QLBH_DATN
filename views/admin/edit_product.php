@@ -406,13 +406,17 @@ select{
 }
 
 .save-btn{
+    display:inline-block;
+    margin-bottom:20px;
     background:#ff4fa3;
     color:white;
-    border:none;
-    padding:15px 30px;
     border-radius:12px;
+    text-decoration:none;
+    border:none;
+    padding:14px 22px;
+    border-radius:14px;
     cursor:pointer;
-    font-weight:bold;
+    margin-left:10px;
 }
 
 .variant-add{
@@ -435,17 +439,24 @@ select{
 }
 
 .action-area{
+    margin-top:20px;
     display:flex;
+    justify-content:flex-start;
     gap:10px;
 }
 
 .back-btn{
-    padding:15px 25px;
-    background:#f1f1f1;
-    color:#333;
-    text-decoration:none;
+    display:inline-block;
+    margin-bottom:20px;
+    background:#ff4fa3;
+    color:white;
     border-radius:12px;
-    font-weight:bold;
+    text-decoration:none;
+    border:none;
+    padding:14px 22px;
+    border-radius:14px;
+    cursor:pointer;
+    margin-left:10px;
 }
 
 .main-image{
@@ -666,7 +677,17 @@ select:focus{
 
                         <td>
                             <?php if (!empty($v['image'])) { ?>
-                                <img src="../../<?php echo $v['image']; ?>" width="50">
+                                <?php if (!empty($v['image'])) { ?>
+                                    <img src="../../<?php echo $v['image']; ?>" width="50">
+                                <?php } ?>
+
+                                <input
+                                    type="file"
+                                    name="new_image[]"
+                                    accept="image/*"
+                                    onchange="previewVariantImage(this);renderVariantPreview()">
+
+                                <div class="variant-preview"></div>
                             <?php } else { ?>
                                 <span>Không có ảnh</span>
                             <?php } ?>
@@ -821,14 +842,14 @@ select:focus{
 
     <div class="action-area">
         <a href="products.php" class="back-btn">
-            ← Quay lại
+            <i class="fa fa-arrow-left"></i>
+            Quay lại
         </a>
 
-        <button class="save-btn">
+        <a class="save-btn">
             Cập nhật sản phẩm
-        </button>
+        </a>
     </div>
-
 </div>
 
 </form>
@@ -843,7 +864,30 @@ select:focus{
             <td><input type="number" name="new_discount[]" placeholder="Giảm"></td>
             <td><input type="number" name="new_quantity[]" placeholder="SL"></td>
             <td>
-                <input type="file" name="new_image[]" accept="image/*" onchange="previewVariantImage(this)">
+                <input
+                    type="file"
+                    name="new_image[]"
+                    accept="image/*"
+                    onchange="previewVariantImage(this);renderVariantPreview();">
+
+                <div style="margin-top:5px;">
+                    <select
+                        name="new_image_ref[]"
+                        onchange="renderVariantPreview()">
+
+                        <option value="">-- Dùng ảnh cũ --</option>
+
+                        <?php foreach ($variants as $v) { ?>
+                            <?php if (!empty($v['image'])) { ?>
+                                <option value="<?php echo $v['image']; ?>">
+                                    <?php echo trim(($v['size'] ?? '').' - '.($v['color'] ?? ''), ' -'); ?>
+                                </option>
+                            <?php } ?>
+                        <?php } ?>
+
+                    </select>
+                </div>
+
                 <div class="variant-preview"></div>
             </td>
         </tr>
@@ -852,11 +896,14 @@ select:focus{
         document
         .getElementById('newVariant')
         .insertAdjacentHTML('beforeend',html);
+
+        renderVariantPreview();
     }
 
 
     function removeVariant(btn){
         btn.closest('tr').remove();
+        renderVariantPreview();
     }
 </script>
 
@@ -877,6 +924,7 @@ function previewVariantImage(input){
         }
 
         preview.innerHTML = `<img src="${e.target.result}">`;
+        renderVariantPreview();
     };
 
     reader.readAsDataURL(file);
@@ -888,10 +936,25 @@ function renderVariantPreview(){
     let html = '';
 
     rows.forEach(row => {
-        const size = row.querySelector('input[name="size[]"]')?.value || '';
-        const color = row.querySelector('input[name="color[]"]')?.value || '';
-        const price = row.querySelector('input[name="variant_price[]"]')?.value || '';
-        const discount = row.querySelector('input[name="discount_price[]"]')?.value || '';
+        const size =
+        row.querySelector('input[name="size[]"]')?.value ||
+        row.querySelector('input[name="new_size[]"]')?.value ||
+        '';
+
+        const color =
+        row.querySelector('input[name="color[]"]')?.value ||
+        row.querySelector('input[name="new_color[]"]')?.value ||
+        '';
+
+        const price =
+        row.querySelector('input[name="variant_price[]"]')?.value ||
+        row.querySelector('input[name="new_price[]"]')?.value ||
+        '';
+
+        const discount =
+        row.querySelector('input[name="discount_price[]"]')?.value ||
+        row.querySelector('input[name="new_discount[]"]')?.value ||
+        '';
 
         let img = '';
 
@@ -916,7 +979,7 @@ function renderVariantPreview(){
         // =========================
         const select = row.querySelector('select[name="new_image_ref[]"]');
         if (select && select.value && !fileInput?.files?.length) {
-            img = select.value;
+            img = '../../' + select.value;
         }
 
         html += `

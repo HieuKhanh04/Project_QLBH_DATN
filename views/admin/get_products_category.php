@@ -18,13 +18,6 @@ if (!$category) {
     exit('Danh mục không tồn tại');
 }
 
-writeLog(
-    $conn,
-    'VIEW',
-    'Danh mục',
-    'Xem danh sách sản phẩm của danh mục #'.$category_id.' - '.$category['name']
-);
-
 $stmt = $conn->prepare('
     SELECT
         p.*,
@@ -107,9 +100,13 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             margin-bottom:20px;
             background:#ff4fa3;
             color:white;
-            padding:12px 18px;
             border-radius:12px;
             text-decoration:none;
+            border:none;
+            padding:14px 22px;
+            border-radius:14px;
+            cursor:pointer;
+            margin-left:10px;
         }
 
         img{
@@ -118,6 +115,12 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             object-fit:cover;
             border-radius:10px;
         }
+
+        .bottom-actions{
+            margin-top:20px;
+            display:flex;
+            justify-content:flex-start;
+        }
     </style>
 </head>
 <body>
@@ -125,11 +128,6 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <?php include 'sidebar.php'; ?>
 
 <div class="main">
-    <a href="categories.php" class="back-btn">
-        <i class="fa fa-arrow-left"></i>
-        Quay lại
-    </a>
-
     <div class="box">
         <h1>
             Danh mục <?php echo $category['name']; ?>
@@ -169,36 +167,32 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </td>
 
                 <td>
-
                     <span class="badge">
-
                         <?php echo isset($p['status']) && $p['status'] == 1
                             ? 'Hoạt động'
                             : 'Ẩn';
                 ?>
-
                     </span>
-
                 </td>
-
             </tr>
 
             <?php } ?>
-
             <?php if (count($products) == 0) { ?>
-
             <tr>
-
                 <td colspan="4" style="text-align:center">
                     Chưa có sản phẩm trong danh mục này
                 </td>
 
             </tr>
-
             <?php } ?>
-
         </table>
+    </div>
 
+    <div class="bottom-actions">
+        <a href="categories.php" class="back-btn">
+            <i class="fa fa-arrow-left"></i>
+            Quay lại
+        </a>
     </div>
 
 </div>

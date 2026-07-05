@@ -7,7 +7,7 @@ if (!isset($_SESSION['user'])) {
     exit('Không đăng nhập');
 }
 
-$userId = $_SESSION['user']['user_id'];
+$userId = $_SESSION['customer']['user_id'];
 
 $orderId = (int) ($_POST['order_id'] ?? 0);
 

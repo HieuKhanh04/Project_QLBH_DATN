@@ -8,14 +8,31 @@ function writeLog(
     $module,
     $description
 ) {
-    if (!isset($_SESSION['user'])) {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    $userId = null;
+
+    /* CHECK ADMIN */
+    if (isset($_SESSION['admin'])) {
+        $userId = $_SESSION['admin']['user_id'];
+    }
+
+    /* CHECK CUSTOMER */
+    elseif (isset($_SESSION['customer'])) {
+        $userId = $_SESSION['customer']['user_id'];
+    }
+
+    /* NOT LOGIN */
+    if (!$userId) {
         return;
     }
 
     $log = new ActivityLogModel($conn);
 
     $log->addLog(
-        $_SESSION['user']['user_id'],
+        $userId,
         $action,
         $module,
         $description

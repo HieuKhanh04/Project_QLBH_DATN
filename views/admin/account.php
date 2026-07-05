@@ -9,15 +9,12 @@ require_once '../../includes/activity_log.php';
 //     exit;
 // }
 
-if (
-    !isset($_SESSION['user'])
-    || $_SESSION['user']['role'] != 1
-) {
+if (!isset($_SESSION['admin'])) {
     header('Location: ../login.php');
     exit;
 }
 
-$userId = $_SESSION['user']['user_id'];
+$userId = $_SESSION['admin']['user_id'];
 
 /* LẤY THÔNG TIN ADMIN */
 $stmt = $conn->prepare('
@@ -97,8 +94,8 @@ if (isset($_POST['updateProfile'])) {
     );
 
     /* cập nhật session */
-    $_SESSION['user']['name'] = $_POST['name'];
-    $_SESSION['user']['email'] = $_POST['email'];
+    $_SESSION['admin']['name'] = $_POST['name'];
+    $_SESSION['admin']['email'] = $_POST['email'];
 
     header('Location: account.php?success=profile');
     exit;
@@ -469,9 +466,9 @@ body{
                 Danh mục
             </a>
 
-            <a href="#">
-                <i class="fa-regular fa-image"></i>
-                Banner
+            <a href="collections.php">
+                <i class="fa-regular fa-images"></i>
+                Bộ sưu tập
             </a>
 
             <a href="notifications.php">
@@ -493,7 +490,7 @@ body{
                 Tài khoản
             </a>
 
-            <a href="#">
+            <a href="activity_logs.php">
                 <i class="fa-regular fa-clock"></i>
                 Nhật ký hoạt động
             </a>

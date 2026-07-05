@@ -423,9 +423,9 @@ table td{
                 Danh mục
             </a>
 
-            <a href="#">
-                <i class="fa-regular fa-image"></i>
-                Banner
+            <a href="collections.php">
+                <i class="fa-regular fa-images"></i>
+                Bộ sưu tập
             </a>
 
             <a href="notifications.php" class="active">
@@ -447,7 +447,7 @@ table td{
                 Tài khoản
             </a>
 
-            <a href="#">
+            <a href="activity_logs.php">
                 <i class="fa-regular fa-clock"></i>
                 Nhật ký hoạt động
             </a>
@@ -485,8 +485,6 @@ table td{
                 <strong>Admin</strong><br>
                 <small>Quản trị viên</small>
             </div>
-
-            <i class="fa-solid fa-chevron-down"></i>
         </div>
 
     </div>

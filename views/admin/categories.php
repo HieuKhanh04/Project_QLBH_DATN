@@ -4,20 +4,39 @@ require_once '../../includes/activity_log.php';
 
 /* THÊM */
 if (isset($_POST['addCategory'])) {
+    $image = null;
+    if (!empty($_FILES['image']['name'])) {
+        $folder = '../../uploads/categories/';
+        if (!is_dir($folder)) {
+            mkdir($folder, 0777, true);
+        }
+        $filename = time().'_'.basename($_FILES['image']['name']);
+
+        move_uploaded_file(
+            $_FILES['image']['tmp_name'],
+            $folder.$filename
+        );
+
+        $image = 'uploads/categories/'.$filename;
+    }
+
     $stmt = $conn->prepare('
         INSERT INTO categories(
             name,
             slug,
             description,
+            image,
             status,
-            sort_order)
-        VALUES(?,?,?,?,?)
+            sort_order
+        )
+        VALUES(?,?,?,?,?,?)
     ');
 
     $stmt->execute([
         $_POST['name'],
         $_POST['slug'],
         $_POST['description'],
+        $image,
         $_POST['status'],
         $_POST['sort_order'],
     ]);
@@ -35,11 +54,53 @@ if (isset($_POST['addCategory'])) {
 
 /* SỬA */
 if (isset($_POST['updateCategory'])) {
+    /* lấy ảnh cũ */
+    $stmt = $conn->prepare('
+    SELECT image
+    FROM categories
+    WHERE category_id = ?
+    ');
+
+    $stmt->execute([
+        $_POST['category_id'],
+    ]);
+
+    $old = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $image = $old['image'];
+
+    if (!empty($_FILES['image']['name'])) {
+        $folder = '../../uploads/categories/';
+
+        if (!is_dir($folder)) {
+            mkdir($folder, 0777, true);
+        }
+
+        $filename = time().'_'.basename($_FILES['image']['name']);
+
+        move_uploaded_file(
+            $_FILES['image']['tmp_name'],
+            $folder.$filename
+        );
+
+        // xóa ảnh cũ
+        if (!empty($old['image'])) {
+            $oldFile = '../../'.$old['image'];
+
+            if (file_exists($oldFile)) {
+                unlink($oldFile);
+            }
+        }
+
+        $image = 'uploads/categories/'.$filename;
+    }
+
     $stmt = $conn->prepare('
         UPDATE categories SET
             name=?,
             slug=?,
             description=?,
+            image=?,
             status=?,
             sort_order=?
         WHERE category_id=?
@@ -49,6 +110,7 @@ if (isset($_POST['updateCategory'])) {
         $_POST['name'],
         $_POST['slug'],
         $_POST['description'],
+        $image,
         $_POST['status'],
         $_POST['sort_order'],
         $_POST['category_id'],
@@ -444,9 +506,9 @@ select{
                 Danh mục
             </a>
 
-            <a href="#">
-                <i class="fa-regular fa-image"></i>
-                Banner
+            <a href="collections.php">
+                <i class="fa-regular fa-images"></i>
+                Bộ sưu tập
             </a>
 
             <a href="notifications.php" class="sidebar-item">
@@ -468,7 +530,7 @@ select{
                 Tài khoản
             </a>
 
-            <a href="#">
+            <a href="activity_logs.php">
                 <i class="fa-regular fa-clock"></i>
                 Nhật ký hoạt động
             </a>
@@ -502,7 +564,6 @@ select{
                 <strong>Admin</strong><br>
                 <div class="admin-role">Quản trị viên</div>
             </div>
-            <i class="fa-solid fa-chevron-down admin-icon"></i>
         </div>
     </div>
 
@@ -526,6 +587,7 @@ select{
                 <th>Mô tả</th>
                 <th>Trạng thái</th>
                 <th>Thứ tự</th>
+                <th>Ảnh</th>
                 <th>Thao tác</th>
             </tr>
 
@@ -562,6 +624,17 @@ select{
 
                 <td>
                     <?php echo $c['sort_order']; ?>
+                </td>
+
+                <td>
+                    <img
+                        src="../../<?php echo $c['image'] ?: 'assets/no-image.png'; ?>"
+                        style="
+                            width:70px;
+                            height:70px;
+                            object-fit:cover;
+                            border-radius:10px;
+                        ">
                 </td>
 
                 <td>
@@ -624,7 +697,7 @@ select{
             </h2>
         </div>
 
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label>
                     Tên danh mục
@@ -652,6 +725,15 @@ select{
                 <textarea
                     name="description">
                 </textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Ảnh danh mục</label>
+
+                <input
+                    type="file"
+                    name="image"
+                    accept="image/*">
             </div>
 
             <div class="form-group">
@@ -705,7 +787,7 @@ select{
             </h2>
         </div>
 
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="category_id" id="edit_id">
             <div class="form-group">
                 <label>
@@ -727,6 +809,26 @@ select{
                 </label>
 
                 <textarea name="description" id="edit_description"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Ảnh danh mục</label>
+                <input
+                    type="file"
+                    name="image"
+                    accept="image/*">
+
+                <div style="margin-top:10px;">
+                    <img
+                        id="edit_preview"
+                        src=""
+                        style="
+                            width:120px;
+                            height:120px;
+                            object-fit:cover;
+                            border-radius:12px;
+                            border:1px solid #ddd;">
+                </div>
             </div>
 
             <div class="form-group">
@@ -878,6 +980,11 @@ select{
 
         document.getElementById("edit_sort")
         .value=data.sort_order;
+
+        const preview = document.getElementById("edit_preview");
+        preview.src = data.image
+            ? "../../" + data.image
+            : "../../assets/no-image.png";
     }
 
     function closeEditPopup(){

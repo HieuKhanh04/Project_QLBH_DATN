@@ -35,7 +35,7 @@ class ActivityLogModel
             $action,
             $module,
             $description,
-            $_SERVER['REMOTE_ADDR'],
+            $_SERVER['REMOTE_ADDR'] ?? null,
         ]);
     }
 
@@ -47,9 +47,8 @@ class ActivityLogModel
                 activity_logs.*,
                 users.name
             FROM activity_logs
-            JOIN users
-            ON users.user_id = activity_logs.user_id
-
+            LEFT JOIN users
+                ON users.user_id = activity_logs.user_id
             ORDER BY created_at DESC
         ';
 
@@ -58,10 +57,9 @@ class ActivityLogModel
             ->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /* Xóa */
+    /* Xóa log */
     public function clearLogs()
     {
-        return $this->conn
-            ->exec('TRUNCATE TABLE activity_logs');
+        return $this->conn->exec('TRUNCATE TABLE activity_logs');
     }
 }
