@@ -1,18 +1,32 @@
 <?php
 require_once '../../config/database.php';
+require_once '../../includes/activity_log.php';
 
 /* XÁC NHẬN ĐƠN HÀNG */
 if (isset($_GET['confirm'])) {
     $id = (int) $_GET['confirm'];
-
+    // Lấy thông tin đơn hàng trước khi cập nhật
+    $stmt = $conn->prepare('
+        SELECT order_code
+        FROM orders
+        WHERE order_id = ?
+    ');
+    $stmt->execute([$id]);
+    $order = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Cập nhật trạng thái
     $stmt = $conn->prepare("
         UPDATE orders
         SET status = 'confirmed'
         WHERE order_id = ?
     ");
-
     $stmt->execute([$id]);
-
+    // Ghi log
+    writeLog(
+        $conn,
+        'UPDATE',
+        'Đơn hàng',
+        'Xác nhận đơn hàng #'.$id.' - '.($order['order_code'] ?? '')
+    );
     header('Location: orders.php?confirm_success=1');
     exit;
 }
@@ -20,16 +34,30 @@ if (isset($_GET['confirm'])) {
 /* HỦY ĐƠN HÀNG */
 if (isset($_GET['cancel'])) {
     $id = (int) $_GET['cancel'];
-
+    // Lấy thông tin đơn hàng trước khi cập nhật
+    $stmt = $conn->prepare('
+        SELECT order_code
+        FROM orders
+        WHERE order_id = ?
+    ');
+    $stmt->execute([$id]);
+    $order = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Cập nhật trạng thái
     $stmt = $conn->prepare("
         UPDATE orders
         SET
-            status='cancelled',
-            cancelled_by='Admin'
-        WHERE order_id=?
+            status = 'cancelled',
+            cancelled_by = 'Admin'
+        WHERE order_id = ?
     ");
     $stmt->execute([$id]);
-
+    // Ghi log
+    writeLog(
+        $conn,
+        'UPDATE',
+        'Đơn hàng',
+        'Hủy đơn hàng #'.$id.' - '.($order['order_code'] ?? '')
+    );
     header('Location: orders.php?cancel_success=1');
     exit;
 }

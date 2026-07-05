@@ -4,6 +4,7 @@ session_start();
 
 require_once '../config/database.php';
 require_once '../models/UserModel.php';
+require_once '../includes/activity_log.php';
 
 $userModel = new UserModel($conn);
 
@@ -19,6 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // ADMIN
         if ($user['role'] == 1) {
             $_SESSION['admin'] = $user;
+            writeLog(
+                $conn,
+                'LOGIN',
+                'Tài khoản',
+                'Đăng nhập: '.$user['email']
+            );
 
             header('Location: ../views/admin/admin_dashboard.php');
             exit;

@@ -1,6 +1,7 @@
 <?php
 
 require_once '../../config/database.php';
+require_once '../../includes/activity_log.php';
 
 $name = $_POST['name'];
 $slug = $_POST['slug'];
@@ -14,20 +15,16 @@ $conn->beginTransaction();
 
 try {
     /* PRODUCTS */
-
     $stmt = $conn->prepare('
-        INSERT INTO products
-        (
+        INSERT INTO products(
             name,
             slug,
             price,
             description,
             category_id,
             collection_id,
-            status
-        )
-        VALUES
-        (?, ?, ?, ?, ?, ?, 1)
+            status)
+        VALUES(?, ?, ?, ?, ?, ?, 1)
     ');
 
     $stmt->execute([
@@ -40,22 +37,24 @@ try {
     ]);
 
     $product_id = $conn->lastInsertId();
+    writeLog(
+        $conn,
+        'CREATE',
+        'Sản phẩm',
+        'Thêm sản phẩm #'.$product_id.' - '.$name
+    );
 
     /* VARIANT */
-
     $stmt = $conn->prepare('
-        INSERT INTO product_variants
-        (
+        INSERT INTO product_variants(
             product_id,
             size,
             color,
             price,
             discount_price,
             quantity,
-            image
-        )
-        VALUES
-        (?, ?, ?, ?, ?, ?, ?)
+            image)
+            VALUES(?, ?, ?, ?, ?, ?, ?)
     ');
 
     $stmt->execute([
@@ -67,24 +66,32 @@ try {
         $_POST['quantity'],
         $_POST['variant_image'],
     ]);
+    writeLog(
+        $conn,
+        'CREATE',
+        'Sản phẩm',
+        'Thêm biến thể cho sản phẩm #'.$product_id.
+        ' ('.$_POST['color'].'/'.$_POST['size'].')'
+    );
 
     /* MAIN IMAGE */
-
     $stmt = $conn->prepare('
-        INSERT INTO product_images
-        (
+        INSERT INTO product_images(
             product_id,
             image_url,
-            is_main
-        )
-        VALUES
-        (?, ?, 1)
+            is_main)
+        VALUES (?, ?, 1)
     ');
-
     $stmt->execute([
         $product_id,
         $_POST['main_image'],
     ]);
+    writeLog(
+        $conn,
+        'CREATE',
+        'Sản phẩm',
+        'Thêm ảnh chính cho sản phẩm #'.$product_id
+    );
 
     $conn->commit();
 

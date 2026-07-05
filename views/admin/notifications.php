@@ -1,5 +1,6 @@
 <?php
 require_once '../../config/database.php';
+require_once '../../includes/activity_log.php';
 
 /* THÊM */
 if (isset($_POST['addNotification'])) {
@@ -11,11 +12,9 @@ if (isset($_POST['addNotification'])) {
             status,
             start_date,
             end_date,
-            is_pinned
-        )
+            is_pinned)
         VALUES(?,?,?,?,?,?,?)
     ');
-
     $stmt->execute([
         $_POST['title'],
         $_POST['content'],
@@ -25,7 +24,13 @@ if (isset($_POST['addNotification'])) {
         !empty($_POST['end_date']) ? $_POST['end_date'] : null,
         isset($_POST['is_pinned']) ? 1 : 0,
     ]);
-
+    $notification_id = $conn->lastInsertId();
+    writeLog(
+        $conn,
+        'CREATE',
+        'Thông báo',
+        'Thêm thông báo #'.$notification_id.' - '.$_POST['title']
+    );
     header('Location: notifications.php?success=Thêm');
     exit;
 }
@@ -56,6 +61,12 @@ if (isset($_POST['updateNotification'])) {
         isset($_POST['is_pinned']) ? 1 : 0,
         $_POST['notification_id'],
     ]);
+    writeLog(
+        $conn,
+        'UPDATE',
+        'Thông báo',
+        'Cập nhật thông báo #'.$_POST['notification_id'].' - '.$_POST['title']
+    );
 
     header('Location: notifications.php?success=Sửa');
     exit;
@@ -64,6 +75,14 @@ if (isset($_POST['updateNotification'])) {
 /* XÓA */
 if (isset($_POST['deleteNotification'])) {
     $stmt = $conn->prepare('
+        SELECT title
+        FROM notifications
+        WHERE notification_id = ?
+    ');
+    $stmt->execute([$_POST['delete_id']]);
+    $notification = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $stmt = $conn->prepare('
         DELETE FROM notifications
         WHERE notification_id=?
     ');
@@ -71,6 +90,13 @@ if (isset($_POST['deleteNotification'])) {
     $stmt->execute([
         $_POST['delete_id'],
     ]);
+
+    writeLog(
+        $conn,
+        'DELETE',
+        'Thông báo',
+        'Xóa thông báo #'.$_POST['delete_id'].' - '.($notification['title'] ?? '')
+    );
 
     header('Location: notifications.php?success=Xóa');
     exit;
