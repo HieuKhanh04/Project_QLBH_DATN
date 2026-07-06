@@ -2,12 +2,12 @@
 session_start();
 require_once '../config/database.php';
 
-if (!isset($_SESSION['user'])) {
+if (!isset($_SESSION['customer'])) {
     header('Location: login.php');
     exit;
 }
 
-$userId = $_SESSION['user']['user_id'];
+$userId = $_SESSION['customer']['user_id'];
 
 $productId = (int) ($_GET['product'] ?? 0);
 $orderId = (int) ($_GET['order'] ?? 0);
@@ -16,9 +16,7 @@ if ($productId <= 0 || $orderId <= 0) {
     exit('Dữ liệu không hợp lệ');
 }
 
-/* =========================
-   LẤY THÔNG TIN ĐÁNH GIÁ
-========================= */
+/*   LẤY THÔNG TIN ĐÁNH GIÁ */
 
 $stmt = $conn->prepare('
 

@@ -6,7 +6,7 @@ require_once '../models/ProductModel.php';
 
 $productModel = new ProductModel($conn);
 
-$user = $_SESSION['user'] ?? null;
+$user = $_SESSION['customer'] ?? null;
 $cart = $_SESSION['cart'] ?? [];
 $buyNow = $_SESSION['buy_now'] ?? null;
 

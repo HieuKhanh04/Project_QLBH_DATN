@@ -2,13 +2,11 @@
 session_start();
 require_once '../config/database.php';
 
-if (!isset($_SESSION['user'])) {
+if (!isset($_SESSION['customer'])) {
     header('Location: login.php');
     exit;
 }
-
-$user = $_SESSION['user'];
-$userId = $user['user_id'];
+$userId = $_SESSION['customer']['user_id'];
 
 $productId = (int) ($_GET['product'] ?? 0);
 $orderId = (int) ($_GET['order'] ?? 0);

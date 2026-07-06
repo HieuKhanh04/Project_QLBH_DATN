@@ -4,12 +4,12 @@ session_start();
 
 require_once '../config/database.php';
 
-if (!isset($_SESSION['user'])) {
+if (!isset($_SESSION['customer'])) {
     header('Location: ../views/login.php');
     exit;
 }
 
-$user = $_SESSION['user'];
+$user = $_SESSION['customer'];
 
 $productId = (int) ($_POST['product_id'] ?? 0);
 $orderId = (int) ($_POST['order_id'] ?? 0);

@@ -3,7 +3,7 @@
 session_start();
 require_once '../config/database.php';
 
-if (!isset($_SESSION['user'])) {
+if (!isset($_SESSION['customer'])) {
     exit('Không đăng nhập');
 }
 

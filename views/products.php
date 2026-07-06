@@ -10,16 +10,30 @@ $productModel = new ProductModel($conn);
 $stmt = $conn->query('SELECT * FROM categories');
 $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* FILTER */
-$category_id = $_GET['category'] ?? 0;
+/* FILTER + SEARCH */
+$keyword = trim($_GET['keyword'] ?? '');
+$category_id = (int) ($_GET['category'] ?? 0);
 
-if ($category_id > 0) {
+if ($keyword != '') {
+    $stmt = $conn->prepare('
+        SELECT
+            p.*,
+            pi.image_url
+        FROM products p
+        LEFT JOIN product_images pi
+            ON p.product_id = pi.product_id
+            AND pi.is_main = 1
+        WHERE p.name LIKE ?
+        ORDER BY p.product_id DESC
+    ');
+    $stmt->execute(["%{$keyword}%"]);
+    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} elseif ($category_id > 0) {
     $products = $productModel->getProductsByCategory($category_id);
 } else {
     $products = $productModel->getAllProducts();
 }
-
-$activeCategory = (int) $category_id;
+$activeCategory = $category_id;
 ?>
 
 <!DOCTYPE html>

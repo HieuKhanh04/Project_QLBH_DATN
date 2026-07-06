@@ -9,9 +9,7 @@ if (!$orderId) {
     exit('Không tìm thấy đơn hàng');
 }
 
-/* =========================
-   ORDER
-========================= */
+/* ORDER */
 
 $stmt = $conn->prepare('
     SELECT *
@@ -27,9 +25,7 @@ if (!$order) {
     exit('Đơn hàng không tồn tại');
 }
 
-/* =========================
-   ORDER DETAILS
-========================= */
+/*  ORDER DETAILS */
 
 $stmt = $conn->prepare('
     SELECT *

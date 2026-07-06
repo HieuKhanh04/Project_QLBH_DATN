@@ -2,12 +2,12 @@
 session_start();
 require_once '../config/database.php';
 
-if (!isset($_SESSION['user'])) {
+if (!isset($_SESSION['customer'])) {
     header('Location: login.php');
     exit;
 }
 
-$userId = $_SESSION['user']['user_id'];
+$userId = $_SESSION['customer']['user_id'];
 $orderId = (int) ($_GET['id'] ?? 0);
 
 if ($orderId <= 0) {
@@ -309,13 +309,27 @@ body{
                 <tr>
                     <td>
                         <div class="d-flex align-items-center gap-3">
-                            <img 
-                                src="../uploads/products/<?php echo htmlspecialchars($item['image'] ?? 'default.png'); ?>" 
+                            <img
+                                src="../<?php echo htmlspecialchars($item['image']); ?>"
                                 class="product-img"
-                            >
+                                onerror="this.src='../uploads/no-image.png';">
 
                             <div>
-                                <?php echo htmlspecialchars($item['name']); ?>
+                                <div class="fw-bold">
+                                    <?php echo htmlspecialchars($item['name']); ?>
+                                </div>
+
+                                <small class="text-muted">
+                                    Size:
+                                    <?php echo htmlspecialchars($item['size']); ?>
+                                </small>
+
+                                <br>
+
+                                <small class="text-muted">
+                                    Màu:
+                                    <?php echo htmlspecialchars($item['color']); ?>
+                                </small>
                             </div>
                         </div>
                     </td>

@@ -7,7 +7,7 @@ require_once '../config/database.php';
    KIỂM TRA ĐĂNG NHẬP
 ========================= */
 
-if (!isset($_SESSION['user'])) {
+if (!isset($_SESSION['customer'])) {
     header('Location: ../views/login.php');
     exit;
 }

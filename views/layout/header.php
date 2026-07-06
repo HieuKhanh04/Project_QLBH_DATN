@@ -34,7 +34,7 @@ $current = basename($_SERVER['PHP_SELF']);
 /* THÔNG BÁO */
 // $customerId = $_SESSION['customer_id'] ?? 0;
 
-$customerId = $_SESSION['user']['user_id'] ?? 0;
+$customerId = $_SESSION['customer']['user_id'] ?? 0;
 
 $stmt = $conn->prepare('
     SELECT
@@ -73,45 +73,28 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 rel="stylesheet"> -->
 
 <style>
-
     .top-bar{
-
         background:#ff85c1;
-
         color:white;
-
         text-align:center;
-
         padding:10px;
-
         font-size:14px;
     }
 
     .header{
-
         background:white;
-
         height:90px;
-
         display:flex;
-
         align-items:center;
-
         justify-content:space-between;
-
         padding:0 50px;
-
         box-shadow:0 2px 10px rgba(0,0,0,0.05);
-
         position:sticky;
-
         top:0;
-
         z-index:1000;
     }
 
     .logo{
-
         font-family: 'Great Vibes', cursive;
         font-size: 42px;
         color: #ff4fa3;
@@ -121,20 +104,14 @@ rel="stylesheet"> -->
     }
 
     .menu{
-
         display:flex;
-
         gap:35px;
     }
 
     .menu a{
-
         text-decoration:none;
-
         color:#333;
-
         font-size:16px;
-
         font-weight:bold;
     }
 
@@ -143,98 +120,63 @@ rel="stylesheet"> -->
     }
 
     .search-form{
-
         display:flex;
-
         align-items:center;
-
         background:#fff0f7;
-
         border-radius:30px;
-
         overflow:hidden;
     }
 
     .search-form input{
-
         border:none;
-
         outline:none;
-
         padding:10px 15px;
-
         width:220px;
-
         background:transparent;
     }
 
     .search-form button{
-
         border:none;
-
         background:none;
-
         padding:0 15px;
-
         cursor:pointer;
-
         color:#ff4fa3;
     }
 
     .header-icons{
-
         display:flex;
-
         gap:15px;
     }
 
     .icon-box{
-
         width:45px;
         height:45px;
-
         border-radius:50%;
-
         background:#fff0f7;
-
         display:flex;
-
         align-items:center;
         justify-content:center;
-
         text-decoration:none;
-
         position:relative;
     }
 
     .icon-box i{
-
         color:#ff4fa3;
-
         font-size:18px;
     }
 
     .cart-count{
-
         position:absolute;
-
         top:-5px;
         right:-5px;
-
         background:red;
-
         color:white;
-
         min-width:18px;
         height:18px;
-
         border-radius:50%;
-
         display:flex;
-
         align-items:center;
         justify-content:center;
-
         font-size:11px;
     }
 
@@ -412,13 +354,12 @@ rel="stylesheet"> -->
         <a href="contact.php" class="<?php echo $current == 'contact.php' ? 'active' : ''; ?>">LIÊN HỆ</a>
     </div>
 
-    <form action="index.php"
-    method="GET"
-    class="search-form">
-
-        <input type="text"
-        name="keyword"
-        placeholder="Tìm sản phẩm...">
+    <form action="products.php" method="GET" class="search-form">
+        <input
+            type="text"
+            name="keyword"
+            value="<?php echo htmlspecialchars($_GET['keyword'] ?? ''); ?>"
+            placeholder="Tìm sản phẩm...">
 
         <button type="submit">
             <i class="fa-solid fa-magnifying-glass"></i>
