@@ -228,6 +228,7 @@ body{
 
 .page-title h1{
     font-size:36px;
+    margin-bottom:10px;
 }
 
 .page-title p{
@@ -435,6 +436,11 @@ table td{
                 Khuyến mãi
             </a>
 
+            <a href="user_account.php">
+                <i class="fa-solid fa-user"></i>
+                Tài khoản người dùng
+            </a>
+
             <a href="reports.php">
                 <i class="fa-solid fa-chart-pie"></i>
                 Báo cáo
@@ -457,6 +463,11 @@ table td{
             <a href="notifications.php" class="active">
                 <i class="fa-regular fa-bell"></i>
                 Thông báo
+            </a>
+
+            <a href="reviews.php">
+                <i class="fa-regular fa-star"></i>
+                Đánh giá
             </a>
 
             <div class="menu-title">

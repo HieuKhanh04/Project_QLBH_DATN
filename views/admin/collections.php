@@ -303,7 +303,7 @@ $collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         .page-title h1{
             font-size:36px;
-            margin-bottom:8px;
+            margin-bottom:10px;
         }
 
         .page-title p{
@@ -498,6 +498,11 @@ $collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     Khuyến mãi
                 </a>
 
+                <a href="user_account.php">
+                    <i class="fa-solid fa-user"></i>
+                    Tài khoản người dùng
+                </a>
+
                 <a href="reports.php">
                     <i class="fa-solid fa-chart-pie"></i>
                     Báo cáo
@@ -520,6 +525,11 @@ $collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <a href="notifications.php">
                     <i class="fa-regular fa-bell"></i>
                     Thông báo
+                </a>
+
+                <a href="reviews.php">
+                    <i class="fa-regular fa-star"></i>
+                    Đánh giá
                 </a>
 
                 <div class="menu-title">

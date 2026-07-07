@@ -50,6 +50,7 @@ $customerName = $orders[0]['receiver_name'];
 
         h1{
             color:#ff4fa3;
+            margin-bottom:10px;
         }
 
         .info{

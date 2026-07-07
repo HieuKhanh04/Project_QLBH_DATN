@@ -846,9 +846,9 @@ select:focus{
             Quay lại
         </a>
 
-        <a class="save-btn">
+        <button type="submit" class="save-btn">
             Cập nhật sản phẩm
-        </a>
+        </button>
     </div>
 </div>
 
