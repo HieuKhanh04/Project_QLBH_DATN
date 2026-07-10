@@ -371,4 +371,23 @@ class ProductModel
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /* CALCULATE PROMOTION PRICE */
+    public function applyPromotion($price, $promotion)
+    {
+        if (!$promotion) {
+            return $price;
+        }
+        if ($promotion['discount_type'] == 'percent') {
+            $price =
+                $price -
+                ($price * $promotion['discount_value'] / 100);
+        } else {
+            $price =
+                $price -
+                $promotion['discount_value'];
+        }
+
+        return max(0, $price);
+    }
 }

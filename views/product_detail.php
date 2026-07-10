@@ -648,133 +648,138 @@ function updateVariantPrice() {
 }
 
 function resetPrice(){
-    document.querySelector('.product-price').innerText =
-        <?php
-        if ($priceRange['min'] && $priceRange['max'] && $priceRange['min'] != $priceRange['max']) {
-            echo json_encode(number_format($priceRange['min']).'₫ - '.number_format($priceRange['max']).'₫');
-        } else {
-            echo json_encode(number_format($product['price']).'₫');
-        }
-?>;
+    let firstVariant = variants[0];
+    if(
+        firstVariant &&
+        firstVariant.discount_price &&
+        Number(firstVariant.discount_price) < Number(firstVariant.price)
+    ){
+        document.querySelector('.product-price').innerHTML = `
+            <span class="text-decoration-line-through text-muted fs-6">
+                ${Number(firstVariant.price).toLocaleString()}₫
+            </span>
+
+            <span class="ms-2 text-danger fw-bold">
+                ${Number(firstVariant.discount_price).toLocaleString()}₫
+            </span>
+        `;
+    }else{
+        document.querySelector('.product-price').innerHTML =
+
+            Number(firstVariant?.price ?? <?php echo $product['price']; ?>)
+            .toLocaleString()
+            + '₫';
+    }
 }
 
 function updateVariantUI() {
-
     let size = document.getElementById('selectedSize').value;
     let color = document.getElementById('selectedColor').value;
 
     let hasSize = <?php echo $hasSize ? 'true' : 'false'; ?>;
     let hasColor = <?php echo $hasColor ? 'true' : 'false'; ?>;
+   
+    // HÀM HIỂN THỊ GIÁ
+    function showPrice(match){
+        if(!match){
+            resetPrice();
+            return;
+        }
+        let priceHTML = '';
 
-    // =============================
-    // CASE 1: sản phẩm có cả Size + Màu
-    // =============================
-    if (hasSize && hasColor) {
+        if(
+            match.discount_price &&
+            Number(match.discount_price) < Number(match.price)
+        ){
+            priceHTML = `
+                <span class="text-decoration-line-through text-muted fs-6">
+                    ${Number(match.price).toLocaleString()}₫
+                </span>
 
-        // chưa chọn màu
-        if (!color) {
+                <span class="ms-2 text-danger fw-bold">
+                    ${Number(match.discount_price).toLocaleString()}
+                </span>
+            `;
+        }else{
+            priceHTML = `
+                ${Number(match.price).toLocaleString()}₫
+            `;
+        }
+        document.querySelector(".product-price").innerHTML = priceHTML;
+    }
+
+    // HÀM ĐỔI ẢNH
+    function changeVariantImage(match){
+        if(match && match.image){
+            document.getElementById("mainProductImage").src =
+                "../" + match.image;
+        }
+    }
+   
+    // CASE 1:Có cả SIZE + MÀU
+    if(hasSize && hasColor){
+        // Chưa chọn đủ
+        if(!size || !color){
             resetImageAndPrice();
             return;
         }
 
-        // chỉ chọn màu
-        if (!size) {
-
-            let colorVariant = variants.find(v => v.color == color);
-
-            if (colorVariant && colorVariant.image) {
-                document.getElementById("mainProductImage").src =
-                    "../" + colorVariant.image;
-            }
-
-            resetPrice();
-            return;
-        }
-
-        // chọn đủ size + màu
         let match = variants.find(v =>
             v.size == size &&
             v.color == color
         );
 
-        if (match) {
-
-            if (match.image) {
-                document.getElementById("mainProductImage").src =
-                    "../" + match.image;
-            }
-
-            if (match.price) {
-                document.querySelector(".product-price").innerText =
-                    Number(match.price).toLocaleString() + "₫";
-            }
-
-        } else {
+        if(match){
+            changeVariantImage(match);
+            showPrice(match);
+        }else{
             resetImageAndPrice();
         }
-
         return;
     }
 
-    // =============================
-    // CASE 2: chỉ có Màu
-    // =============================
-    if (!hasSize && hasColor) {
-
-        if (!color) {
+    // CASE 2:Chỉ có MÀU
+    if(!hasSize && hasColor){
+        if(!color){
             resetImageAndPrice();
             return;
         }
 
-        let match = variants.find(v => v.color == color);
+        let match = variants.find(v =>
+            v.color == color
+        );
 
-        if (match) {
-
-            if (match.image) {
-                document.getElementById("mainProductImage").src =
-                    "../" + match.image;
-            }
-
-            if (match.price) {
-                document.querySelector(".product-price").innerText =
-                    Number(match.price).toLocaleString() + "₫";
-            }
-
-        } else {
+        if(match){
+            changeVariantImage(match);
+            showPrice(match);
+        }else{
             resetImageAndPrice();
         }
-
         return;
     }
 
-    // =============================
-    // CASE 3: chỉ có Size
-    // =============================
-    if (hasSize && !hasColor) {
-
-        if (!size) {
+    // CASE 3:Chỉ có SIZE
+    if(hasSize && !hasColor){
+        if(!size){
             resetImageAndPrice();
             return;
         }
 
-        let match = variants.find(v => v.size == size);
+        let match = variants.find(v =>
+            v.size == size
+        );
 
-        if (match) {
-
-            if (match.image) {
-                document.getElementById("mainProductImage").src =
-                    "../" + match.image;
-            }
-
-            if (match.price) {
-                document.querySelector(".product-price").innerText =
-                    Number(match.price).toLocaleString() + "₫";
-            }
-
-        } else {
+        if(match){
+            changeVariantImage(match);
+            showPrice(match);
+        }else{
             resetImageAndPrice();
         }
+        return;
+
     }
+    // CASE 4:Sản phẩm không có biến thể
+    resetPrice();
 }
 
 </script>

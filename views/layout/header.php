@@ -354,7 +354,7 @@ rel="stylesheet"> -->
         <a href="contact.php" class="<?php echo $current == 'contact.php' ? 'active' : ''; ?>">LIÊN HỆ</a>
     </div>
 
-    <form action="products.php" method="GET" class="search-form">
+    <form method="GET" class="search-form">
         <input
             type="text"
             name="keyword"

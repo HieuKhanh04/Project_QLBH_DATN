@@ -34,32 +34,90 @@ if (isset($_GET['confirm'])) {
 /* HỦY ĐƠN HÀNG */
 if (isset($_GET['cancel'])) {
     $id = (int) $_GET['cancel'];
-    // Lấy thông tin đơn hàng trước khi cập nhật
-    $stmt = $conn->prepare('
-        SELECT order_code
-        FROM orders
-        WHERE order_id = ?
-    ');
-    $stmt->execute([$id]);
-    $order = $stmt->fetch(PDO::FETCH_ASSOC);
-    // Cập nhật trạng thái
-    $stmt = $conn->prepare("
-        UPDATE orders
-        SET
-            status = 'cancelled',
-            cancelled_by = 'Admin'
-        WHERE order_id = ?
-    ");
-    $stmt->execute([$id]);
-    // Ghi log
-    writeLog(
-        $conn,
-        'UPDATE',
-        'Đơn hàng',
-        'Hủy đơn hàng #'.$id.' - '.($order['order_code'] ?? '')
-    );
-    header('Location: orders.php?cancel_success=1');
-    exit;
+
+    try {
+        $conn->beginTransaction();
+
+        // Lấy thông tin đơn hàng
+        $stmt = $conn->prepare('
+            SELECT status, order_code
+            FROM orders
+            WHERE order_id = ?
+        ');
+
+        $stmt->execute([$id]);
+
+        $order = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$order) {
+            throw new Exception('Không tìm thấy đơn hàng');
+        }
+
+        // Chỉ hoàn kho nếu đơn chưa hủy
+        if ($order['status'] != 'cancelled') {
+            // Lấy sản phẩm trong đơn
+            $stmt = $conn->prepare('
+                SELECT 
+                    product_id,
+                    size,
+                    color,
+                    quantity
+                FROM order_details
+                WHERE order_id = ?
+            ');
+
+            $stmt->execute([$id]);
+
+            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($items as $item) {
+                // cộng lại tồn kho biến thể
+                $stmt = $conn->prepare('
+                    UPDATE product_variants
+                    SET quantity = quantity + ?
+                    WHERE product_id = ?
+                    AND size = ?
+                    AND color = ?
+                ');
+
+                $stmt->execute([
+                    $item['quantity'],
+                    $item['product_id'],
+                    $item['size'],
+                    $item['color'],
+                ]);
+            }
+
+            // Cập nhật trạng thái đơn
+            $stmt = $conn->prepare("
+                UPDATE orders
+                SET
+                    status = 'cancelled',
+                    cancelled_by = 'Admin'
+                WHERE order_id = ?
+            ");
+
+            $stmt->execute([$id]);
+        }
+
+        $conn->commit();
+
+        writeLog(
+            $conn,
+            'UPDATE',
+            'Đơn hàng',
+            'Hủy đơn hàng #'.$id.' - '.($order['order_code'] ?? '')
+        );
+
+        header('Location: orders.php?cancel_success=1');
+        exit;
+    } catch (Exception $e) {
+        $conn->rollBack();
+
+        exit(
+            'Lỗi hủy đơn: '.$e->getMessage()
+        );
+    }
 }
 
 /* TÌM KIẾM */

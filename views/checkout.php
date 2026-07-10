@@ -1268,24 +1268,40 @@ function toggleVoucherList() {
 /* CLICK SELECT */
 function selectVoucher(code) {
     document.getElementById('voucherInput').value = code;
-    applyVoucher(); // auto apply luôn
+    // Đóng danh sách voucher
+    document.getElementById('voucherList').style.display = 'none';
+    // Áp dụng luôn
+    applyVoucher();
 }
 
 /* APPLY VOUCHER */
 function applyVoucher() {
 
-    let code = document.getElementById('voucherInput').value.trim();
-    if (!code) return;
+    let code = document.getElementById("voucherInput").value.trim();
 
-    let total = calculateCurrentTotal(); // OK sau khi thêm hàm
+    if (!code) {
+        alert("Chưa có mã voucher");
+        return;
+    }
 
-    fetch('../controllers/VoucherController.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: `action=apply&code=${code}&total=${total}`
+    let total = calculateCurrentTotal();
+
+    fetch("../controllers/Vouchers.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+            action: "apply",
+            code: code,
+            total: total
+        })
     })
     .then(r => r.json())
     .then(data => {
+
+        // console.log(data);
+        console.log(JSON.stringify(data));
 
         if (!data.success) {
             alert(data.message);
@@ -1295,11 +1311,15 @@ function applyVoucher() {
         discountAmount = data.discount;
         appliedVoucher = data.voucher;
 
-        document.getElementById('activeVoucher').style.display = 'block';
-        document.getElementById('activeVoucherCode').innerText = data.voucher.code;
+        document.getElementById("activeVoucher").style.display = "block";
+        document.getElementById("activeVoucherCode").innerText = data.voucher.code;
+
+        // Tự đóng danh sách voucher
+        document.getElementById("voucherList").style.display = "none";
 
         recalculateTotal();
-    });
+    })
+    .catch(err => console.log(err));
 }
 
 /* REMOVE VOUCHER */

@@ -23,17 +23,24 @@ if (!$order) {
 }
 
 /* Lấy danh sách sản phẩm */
+// $stmt = $conn->prepare('
+// SELECT
+//     od.*,
+//     pv.image AS variant_image
+// FROM order_details od
+// LEFT JOIN product_variants pv
+//     ON od.product_id = pv.product_id
+//     AND od.size = pv.size
+//     AND od.color = pv.color
+// WHERE od.order_id = ?
+// ORDER BY od.id ASC
+// ');
+
 $stmt = $conn->prepare('
-SELECT
-    od.*,
-    pv.image AS variant_image
-FROM order_details od
-LEFT JOIN product_variants pv
-    ON od.product_id = pv.product_id
-    AND od.size = pv.size
-    AND od.color = pv.color
-WHERE od.order_id = ?
-ORDER BY od.id ASC
+    SELECT *
+    FROM order_details
+    WHERE order_id = ?
+    ORDER BY id ASC
 ');
 
 $stmt->execute([$orderId]);
@@ -314,6 +321,47 @@ td{
     background:#ff2d91;
 }
 
+.order-summary{
+    margin-top:30px;
+    text-align:right;
+    font-family:Arial;
+    font-size:16px;
+    color:#555;
+}
+
+.order-summary p{
+    margin:12px 0;
+    font-weight:600;
+}
+
+.order-summary p span{
+    margin-left:20px;
+    font-weight:700;
+    color:#333;
+}
+
+.order-summary .discount span{
+    color:#23b26d;
+}
+
+.order-summary hr{
+    border:0;
+    border-top:1px solid #ffd9ea;
+    margin:20px 0;
+}
+
+.order-summary h2{
+    font-size:24px;
+    font-weight:700;
+    color:#ff4fa3;
+    margin:0;
+}
+
+.order-summary h2 span{
+    color:#ff4fa3;
+    margin-left:10px;
+}
+
 </style>
 </head>
 
@@ -469,8 +517,27 @@ td{
             </p>
 
             <p>
-                <strong>Trạng thái:</strong>
+                <strong>Mã giảm giá:</strong>
+                <?php
+                    echo !empty($order['voucher_code']) ?
+                    htmlspecialchars($order['voucher_code'])
+                    :
+                    'Không sử dụng'; ?>
 
+            </p>
+
+            <p>
+                <strong>Giảm giá:</strong>
+                <span style="color:#23b26d"> -<?php echo number_format($order['discount_amount']); ?> đ</span>
+            </p>
+
+            <p>
+                <strong>Phí vận chuyển:</strong>
+                <?php echo number_format($order['shipping_fee']); ?> đ
+            </p>
+
+            <p>
+                <strong>Trạng thái:</strong>
                 <span class="status <?php echo statusClass($order['status']); ?>">
                     <?php echo statusText($order['status']); ?>
                 </span>
@@ -553,8 +620,8 @@ td{
                     <td>
                         <div class="product">
                             <img src="../../<?php
-                                echo !empty($item['variant_image'])
-                                    ? ltrim($item['variant_image'], '/')
+                                echo !empty($item['image'])
+                                    ? ltrim($item['image'], '/')
                                     : 'uploads/no-image.jpg'; ?>">
                             <div>
                                 <strong>
@@ -599,9 +666,22 @@ td{
         </tbody>
     </table>
 
-    <div class="total">
-        Tổng thanh toán:
-        <?php echo number_format($order['total_price']); ?> đ
+    <div class="order-summary">
+        <?php $productTotal = $order['total_price'] - $order['shipping_fee'] + $order['discount_amount']; ?>
+        <p>
+            Tiền hàng: <?php echo number_format($productTotal); ?> đ
+        </p>
+
+        <p>
+            Giảm giá: -<?php echo number_format($order['discount_amount']); ?> đ
+        </p>
+
+        <p>
+            Ship: <?php echo number_format($order['shipping_fee']); ?> đ
+        </p>
+        <hr>
+
+        <h2> Tổng thanh toán: <?php echo number_format($order['total_price']); ?> đ</h2>
     </div>
 
     <a href="orders.php" class="back-btn">

@@ -44,21 +44,64 @@ if ($order['status'] != 'pending') {
     exit('Không thể hủy đơn hàng này');
 }
 
-$stmt = $conn->prepare("
-    UPDATE orders
-    SET 
-        status = 'cancelled',
-        cancel_reason = ?
-    WHERE order_id = ?
-");
+$conn->beginTransaction();
 
-$stmt->execute([
-    $reason,
-    $orderId,
-]);
+try {
+    // CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
+    $stmt = $conn->prepare("
+        UPDATE orders
+        SET 
+            status = 'cancelled',
+            cancel_reason = ?
+        WHERE order_id = ?
+    ");
 
-$_SESSION['cancel_success'] = 'Đơn hàng đã được hủy thành công!';
+    $stmt->execute([
+        $reason,
+        $orderId,
+    ]);
 
-header('Location: ../views/profile.php?tab=orders');
+    // LẤY SẢN PHẨM TRONG ĐƠN
+    $stmt = $conn->prepare('
+        SELECT 
+            product_id,
+            size,
+            color,
+            quantity
+        FROM order_details
+        WHERE order_id = ?
+    ');
 
-exit;
+    $stmt->execute([$orderId]);
+
+    $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // HOÀN LẠI TỒN KHO
+    $stmtStock = $conn->prepare('
+        UPDATE product_variants
+        SET quantity = quantity + ?
+        WHERE product_id = ?
+        AND size = ?
+        AND color = ?
+    ');
+
+    foreach ($items as $item) {
+        $stmtStock->execute([
+            $item['quantity'],
+            $item['product_id'],
+            $item['size'],
+            $item['color'],
+        ]);
+    }
+
+    $conn->commit();
+
+    $_SESSION['cancel_success'] = 'Đơn hàng đã được hủy thành công!';
+
+    header('Location: ../views/profile.php?tab=orders');
+    exit;
+} catch (Exception $e) {
+    $conn->rollBack();
+
+    exit('Lỗi hủy đơn: '.$e->getMessage());
+}

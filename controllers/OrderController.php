@@ -3,9 +3,7 @@
 session_start();
 require_once '../config/database.php';
 
-/* =========================
-   KIỂM TRA ĐĂNG NHẬP
-========================= */
+/* KIỂM TRA ĐĂNG NHẬP */
 
 if (!isset($_SESSION['customer'])) {
     header('Location: ../views/login.php');
@@ -18,9 +16,7 @@ if ($userId <= 0) {
     exit('Không tìm thấy người dùng');
 }
 
-/* =========================
-   NHẬN DỮ LIỆU FORM
-========================= */
+/*  NHẬN DỮ LIỆU FORM */
 
 $receiverName = trim($_POST['receiver_name'] ?? '');
 $receiverPhone = trim($_POST['receiver_phone'] ?? '');
@@ -36,9 +32,7 @@ if (
     exit('Vui lòng nhập đầy đủ thông tin giao hàng');
 }
 
-/* =========================
-   GIỎ HÀNG / BUY NOW
-========================= */
+/* GIỎ HÀNG / BUY NOW */
 
 $isBuyNow = !empty($_SESSION['buy_now']);
 $buyNowItems = $_SESSION['buy_now'] ?? [];
@@ -50,9 +44,7 @@ if (!$isBuyNow && empty($checkoutIds)) {
     exit('Không có sản phẩm để thanh toán');
 }
 
-/* =========================
-   TÍNH ORDER ITEMS
-========================= */
+/* TÍNH ORDER ITEMS */
 
 $orderItems = [];
 $totalPrice = 0;
@@ -198,23 +190,22 @@ if ($isBuyNow) {
     }
 }
 
-/* =========================
-   CHECK SẢN PHẨM
-========================= */
+/* CHECK SẢN PHẨM */
 
 if (empty($orderItems)) {
     exit('Không có sản phẩm hợp lệ');
 }
 
-/* =========================
-   VOUCHER (SAU TOTAL)
-========================= */
-
+/* VOUCHER (SAU TOTAL) */
 $discount = 0;
 $promotionId = null;
 
+$voucherCode = null;
+$shippingFee = 30000; // hoặc lấy theo logic của bạn
+
 if (!empty($_SESSION['voucher'])) {
     $promotionId = (int) ($_SESSION['voucher']['promotion_id'] ?? 0);
+    $voucherCode = $_SESSION['voucher']['code'];
 
     $stmt = $conn->prepare('
         SELECT discount_type, discount_value
@@ -233,17 +224,13 @@ if (!empty($_SESSION['voucher'])) {
         }
     }
 }
-
-/* APPLY DISCOUNT */
-$totalPrice -= $discount;
+$totalPrice = $totalPrice - $discount + $shippingFee;
 
 if ($totalPrice < 0) {
     $totalPrice = 0;
 }
 
-/* =========================
-   CREATE ORDER CODE
-========================= */
+/*  CREATE ORDER CODE */
 
 $orderCode = 'ORD'.date('YmdHis').strtoupper(substr(md5(uniqid()), 0, 4));
 
@@ -257,6 +244,10 @@ try {
             user_id,
             total_price,
             total_quantity,
+            promotion_id,
+            voucher_code,
+            discount_amount,
+            shipping_fee,
             status,
             receiver_name,
             receiver_phone,
@@ -266,7 +257,7 @@ try {
             payment_method,
             payment_status
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'COD', 'unpaid')
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'COD', 'unpaid')
     ");
 
     $stmt->execute([
@@ -274,6 +265,10 @@ try {
         $userId,
         $totalPrice,
         $totalQuantity,
+        $promotionId,
+        $voucherCode,
+        $discount,
+        $shippingFee,
         'pending',
         $receiverName,
         $receiverPhone,
@@ -312,6 +307,55 @@ try {
             $item['subtotal'],
             $item['image'],
         ]);
+    }
+
+    // CẬP NHẬT SỐ LƯỢNG TỒN KHO
+    $stmtStock = $conn->prepare('
+        UPDATE product_variants
+        SET quantity = quantity - ?
+        WHERE product_id = ?
+        AND size = ?
+        AND color = ?
+    ');
+
+    foreach ($orderItems as $item) {
+        $stmtStock->execute([
+            $item['quantity'],
+            $item['product_id'],
+            $item['size'],
+            $item['color'],
+        ]);
+    }
+
+    /* CẬP NHẬT VOUCHER */
+    if ($promotionId) {
+        $stmt = $conn->prepare('
+            UPDATE user_vouchers
+            SET quantity = quantity - 1
+            WHERE user_id = ?
+            AND promotion_id = ?
+            AND quantity > 0
+        ');
+
+        $stmt->execute([$userId, $promotionId]);
+
+        $stmt = $conn->prepare('
+            UPDATE user_vouchers
+            SET is_used = 1
+            WHERE user_id = ?
+            AND promotion_id = ?
+            AND quantity <= 0
+        ');
+
+        $stmt->execute([$userId, $promotionId]);
+
+        $stmt = $conn->prepare('
+            UPDATE promotions
+            SET used_count = used_count + 1
+            WHERE promotion_id = ?
+        ');
+
+        $stmt->execute([$promotionId]);
     }
 
     /* CLEAR VOUCHER */

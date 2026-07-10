@@ -122,28 +122,24 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
             padding:15px;
         }
 
+        .btn-outline-secondary{
+            border-radius:12px;
+            padding:12px;
+            font-weight:700;
+        }
     </style>
-
 </head>
 
 <body>
 
 <?php include 'layout/header.php'; ?>
-
 <div class="container py-5">
-
     <div class="row justify-content-center">
-
         <div class="col-lg-9">
-
             <div class="card success-card">
-
                 <div class="card-body p-4 p-lg-5">
-
                     <!-- SUCCESS -->
-
                     <div class="text-center mb-4">
-
                         <div class="success-icon">
                             🎉
                         </div>
@@ -155,62 +151,41 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <p class="text-muted mb-0">
                             Cảm ơn bạn đã mua sắm tại cửa hàng.
                         </p>
-
                     </div>
 
                     <!-- ORDER INFO -->
-
                     <div class="info-box mb-4">
-
                         <div class="row">
-
                             <div class="col-md-6 mb-2">
-
                                 <strong>Mã đơn hàng:</strong>
-
                                 <span class="pink-text">
                                     <?php echo htmlspecialchars($order['order_code']); ?>
                                 </span>
-
                             </div>
 
                             <div class="col-md-6 mb-2">
-
                                 <strong>Ngày đặt:</strong>
-
                                 <?php echo date(
                                     'd/m/Y H:i',
                                     strtotime($order['created_at'])
                                 ); ?>
-
                             </div>
 
                             <div class="col-md-6 mb-2">
-
                                 <strong>Người nhận:</strong>
-
                                 <?php echo htmlspecialchars($order['receiver_name']); ?>
-
                             </div>
 
                             <div class="col-md-6 mb-2">
-
                                 <strong>SĐT:</strong>
-
                                 <?php echo htmlspecialchars($order['receiver_phone']); ?>
-
                             </div>
 
                             <div class="col-md-12">
-
                                 <strong>Địa chỉ:</strong>
-
                                 <?php echo htmlspecialchars($order['receiver_address']); ?>
-
                             </div>
-
                         </div>
-
                     </div>
 
                     <!-- PRODUCTS -->
@@ -220,15 +195,11 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </h5>
 
                     <?php foreach ($items as $item) { ?>
-
                         <div class="d-flex gap-3 border-bottom py-3">
-
                             <img
                                 src="../<?php echo htmlspecialchars($item['image']); ?>"
                                 class="product-image">
-
                             <div class="flex-grow-1">
-
                                 <div class="product-name">
                                     <?php echo htmlspecialchars($item['name']); ?>
                                 </div>
@@ -249,57 +220,41 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                     Số lượng:
                                     <?php echo $item['quantity']; ?>
-
                                 </div>
-
                             </div>
 
                             <div class="fw-bold pink-text">
-
                                 <?php echo number_format($item['subtotal']); ?>₫
-
                             </div>
-
                         </div>
-
                     <?php } ?>
 
                     <!-- TOTAL -->
-
                     <div class="d-flex justify-content-between mt-4 fs-5 fw-bold">
-
                         <span>Tổng thanh toán</span>
-
                         <span class="pink-text">
-
                             <?php echo number_format($order['total_price']); ?>₫
-
                         </span>
-
                     </div>
 
                     <!-- BUTTONS -->
-
                     <div class="d-grid gap-2 mt-4">
+                        <a
+                            href="order_detail.php?id=<?php echo $order['order_id']; ?>"
+                            class="btn btn-pink">
+                            Xem chi tiết đơn hàng
+                        </a>
 
                         <a
                             href="index.php"
-                            class="btn btn-pink">
-
+                            class="btn btn-outline-secondary">
                             Tiếp tục mua sắm
-
                         </a>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
-
 </div>
 
 <?php include 'layout/footer.php'; ?>

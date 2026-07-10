@@ -83,9 +83,7 @@ body{
     font-size:1.25rem;
 }
 
-/* =========================
-   BUTTON SYSTEM (SYNC PRODUCTS)
-========================= */
+/* BUTTON SYSTEM  */
 
 .btn-pink,
 .btn-outline-pink{

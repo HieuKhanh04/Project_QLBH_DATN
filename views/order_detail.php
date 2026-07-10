@@ -386,19 +386,41 @@ body{
 
     <hr>
     <div class="text-end">
-        <div class="total-price">
-            Tổng cộng:
-            <?php
-            echo number_format(
-                $order['total_price'],
-                0,
-                ',',
-                '.'
+        <p>
+            <b>Tiền hàng:</b>
+            <?php echo number_format(
+                $order['total_price']
+                + $order['discount_amount']
+                - $order['shipping_fee'],
+                0, ',', '.'
             ); ?> đ
+        </p>
+
+        <p>
+            <b>Mã giảm giá:</b>
+            <?php if (!empty($order['voucher_code'])) { ?>
+                <?php echo htmlspecialchars($order['voucher_code']); ?>
+            <?php } else { ?>
+                Không sử dụng
+            <?php } ?>
+        </p>
+
+        <p>
+            <b>Giảm giá:</b>
+            -<?php echo number_format($order['discount_amount'], 0, ',', '.'); ?> đ
+        </p>
+
+        <p>
+            <b>Phí vận chuyển:</b>
+            <?php echo number_format($order['shipping_fee'], 0, ',', '.'); ?> đ
+        </p>
+        <hr>
+        <div class="total-price">
+            Tổng thanh toán:
+            <?php echo number_format($order['total_price'], 0, ',', '.'); ?> đ
         </div>
     </div>
     <div class="mt-4">
-
         <a href="profile.php?tab=orders"
            class="btn btn-pink">
             ← Quay lại đơn mua
@@ -414,11 +436,8 @@ body{
      tabindex="-1">
 
     <div class="modal-dialog modal-dialog-centered">
-
         <div class="modal-content rounded-4">
-
             <div class="modal-body text-center p-5">
-
                 <i class="fa-solid fa-circle-check text-success"
                    style="font-size:70px">
                 </i>

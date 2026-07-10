@@ -10,28 +10,55 @@ if (!isset($_SESSION['customer'])) {
 $user = $_SESSION['customer'];
 $tab = $_GET['tab'] ?? 'profile';
 
+// $orders = [];
+// if ($tab == 'orders') {
+//     $stmt = $conn->prepare('
+//         SELECT
+//             p.*,
+//             uv.quantity,
+//             uv.is_used
+//         FROM promotions p
+//         JOIN user_vouchers uv
+//             ON uv.promotion_id = p.promotion_id
+//         WHERE uv.user_id = ?
+//         ORDER BY p.created_at DESC
+//     ');
+
+//     $stmt->execute([
+//         $user['user_id'],
+//     ]);
+
+//     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// }
+
 $orders = [];
 if ($tab == 'orders') {
     $stmt = $conn->prepare('
-    SELECT *
-    FROM orders
-    WHERE user_id = ?
-    ORDER BY created_at DESC
+        SELECT *
+        FROM orders
+        WHERE user_id = ?
+        ORDER BY created_at DESC
     ');
 
-    $stmt->execute([
-        $user['user_id'],
-    ]);
-
+    $stmt->execute([$user['user_id']]);
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 $vouchers = [];
 if ($tab == 'vouchers') {
     $stmt = $conn->prepare('
-        SELECT p.*, uv.is_used
+        SELECT
+            p.promotion_id,
+            p.code,
+            p.discount_type,
+            p.discount_value,
+            p.start_date,
+            p.end_date,
+            uv.quantity AS user_quantity,
+            uv.is_used
         FROM promotions p
-        JOIN user_vouchers uv ON uv.promotion_id = p.promotion_id
+        JOIN user_vouchers uv
+            ON uv.promotion_id = p.promotion_id
         WHERE uv.user_id = ?
         ORDER BY p.created_at DESC
     ');
@@ -58,20 +85,27 @@ function statusText($status)
     }
 }
 
-$promotions = [];
-if ($tab == 'vouchers') {
-    $stmt = $conn->prepare("
-        SELECT p.*
-        FROM promotions p
-        JOIN user_vouchers uv ON uv.promotion_id = p.promotion_id
-        WHERE uv.user_id = ?
-        AND p.status = 'active'
-        AND p.start_date <= NOW()
-        AND p.end_date >= NOW()
-    ");
-    $stmt->execute([$user['user_id']]);
-    $promotions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+// $promotions = [];
+// if ($tab == 'vouchers') {
+//     $stmt = $conn->prepare('
+//         SELECT
+//             p.promotion_id,
+//             p.code,
+//             p.discount_type,
+//             p.discount_value,
+//             p.start_date,
+//             p.end_date,
+//             uv.quantity AS user_quantity,
+//             uv.is_used
+//         FROM promotions p
+//         JOIN user_vouchers uv
+//             ON uv.promotion_id = p.promotion_id
+//         WHERE uv.user_id = ?
+//         ORDER BY p.created_at DESC
+//         ');
+//     $stmt->execute([$user['user_id']]);
+//     $promotions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// }
 
 ?>
 
@@ -743,11 +777,19 @@ body{
                                 </div>
 
                                 <div>
-                                    <?php if ($v['is_used']) { ?>
-                                        <span class="badge bg-secondary">Đã dùng</span>
-                                    <?php } else { ?>
-                                        <span class="badge bg-success">Chưa dùng</span>
-                                    <?php } ?>
+                                    <div class="text-end">
+                                        <div class="fw-bold mb-2">
+                                            Số lượng: <b><?php echo $v['user_quantity']; ?></b>
+                                        </div>
+
+                                        <?php if ($v['user_quantity'] <= 0) { ?>
+                                            <span class="badge bg-secondary">Đã dùng hết</span>
+                                        <?php } else { ?>
+                                            <span class="badge bg-success">
+                                                Còn <?php echo $v['user_quantity']; ?> voucher
+                                            </span>
+                                        <?php } ?>
+                                    </div>
                                 </div>
 
                             </div>
@@ -1077,7 +1119,6 @@ window.addEventListener('load', function () {
 </div>
 
 <script>
-
 window.addEventListener('load', function(){
 
     let modal = new bootstrap.Modal(
