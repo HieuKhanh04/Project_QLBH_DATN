@@ -220,51 +220,102 @@ body{
 <body>
 
 <div class="admin-container">
-
-    <!-- SIDEBAR (GIỮ NGUYÊN GIAO DIỆN) -->
+    <!-- SIDEBAR -->
     <div class="sidebar">
-
         <a href="admin_dashboard.php" class="logo">
             HAN STORE
         </a>
-
         <div class="sidebar-content">
             <div class="menu">
 
-                <div class="menu-title">MENU CHÍNH</div>
+                <div class="menu-title">
+                    MENU CHÍNH
+                </div>
 
                 <a href="admin_dashboard.php">
-                    <i class="fa-solid fa-chart-line"></i> Dashboard
+                    <i class="fa-solid fa-chart-line"></i>
+                    Dashboard
                 </a>
 
-                <a href="products.php">
-                    <i class="fa-solid fa-shirt"></i> Sản phẩm
+                <a href="products.php" class="active">
+                    <i class="fa-solid fa-shirt"></i>
+                    Sản phẩm
                 </a>
 
                 <a href="orders.php">
-                    <i class="fa-solid fa-cart-shopping"></i> Đơn hàng
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    Đơn hàng
                 </a>
 
                 <a href="customers.php">
-                    <i class="fa-solid fa-users"></i> Khách hàng
+                    <i class="fa-solid fa-users"></i>
+                    Khách hàng
                 </a>
 
-                <a href="reviews.php" class="active">
-                    <i class="fa-regular fa-star"></i> Đánh giá
+                <a href="promotions.php">
+                    <i class="fa-solid fa-tags"></i>
+                    Khuyến mãi
                 </a>
 
-                <a href="notifications.php">
-                    <i class="fa-regular fa-bell"></i> Thông báo
+                <a href="user_account.php">
+                    <i class="fa-solid fa-user"></i>
+                    Tài khoản người dùng
+                </a>
+
+                <a href="reports.php">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    Báo cáo
+                </a>
+
+                <div class="menu-title">
+                    QUẢN LÝ NỘI DUNG
+                </div>  
+                <a href="categories.php" class="sidebar-item">
+                    <i class="fa-regular fa-folder"></i>
+                    Danh mục
+                </a>
+
+                <a href="collections.php">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Bộ sưu tập
+                </a>
+
+                <a href="notifications.php" class="sidebar-item">
+                    <i class="fa-regular fa-bell"></i>
+                    Thông báo
+                </a>
+
+                <a href="reviews.php">
+                    <i class="fa-regular fa-star"></i>
+                    Đánh giá
+                </a>
+
+                <div class="menu-title">
+                    HỆ THỐNG
+                </div>
+
+                <a href="#" class="sidebar-item">
+                    <i class="fa-solid fa-gear"></i>
+                    Cài đặt
+                </a>
+
+                <a href="account.php" class="sidebar-item">
+                    <i class="fa-regular fa-user"></i>
+                    Tài khoản
+                </a>
+
+                <a href="activity_logs.php" class="sidebar-item">
+                    <i class="fa-regular fa-clock"></i>
+                    Nhật ký hoạt động
                 </a>
 
             </div>
         </div>
-
+    
         <a href="../logout.php" class="logout-btn">
             <i class="fa-solid fa-arrow-right-from-bracket"></i>
             Đăng xuất
         </a>
-
     </div>
 
     <!-- CONTENT -->

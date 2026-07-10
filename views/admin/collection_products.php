@@ -498,7 +498,7 @@ $availableProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </a>
 
                 <a href="collections.php" class="active">
-                    <i class="fa-solid fa-images"></i>
+                    <i class="fa-solid fa-layer-group"></i>
                     Bộ sưu tập
                 </a>
 

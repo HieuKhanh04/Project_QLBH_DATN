@@ -11,9 +11,7 @@ class ProductModel
         $this->conn = $db;
     }
 
-    /* =========================
-       GET ALL PRODUCTS
-    ========================= */
+    /* GET ALL PRODUCTS */
     public function getAllProducts()
     {
         $sql = '
@@ -24,11 +22,15 @@ class ProductModel
                 p.description,
                 p.status,
                 p.category_id,
+                c.name AS category_name,
                 p.created_at,
                 p.updated_at,
                 img.image_url,
                 COALESCE(SUM(v.quantity),0) AS total_quantity
             FROM products p
+
+            LEFT JOIN categories c
+                ON p.category_id = c.category_id
 
             LEFT JOIN product_variants v
                 ON p.product_id = v.product_id
@@ -44,6 +46,7 @@ class ProductModel
                 p.description,
                 p.status,
                 p.category_id,
+                c.name,
                 p.created_at,
                 p.updated_at,
                 img.image_url
@@ -57,17 +60,20 @@ class ProductModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /* =========================
-       GET PRODUCT BY ID
-    ========================= */
+    /*  GET PRODUCT BY ID */
     public function getProductById($id)
     {
         $sql = '
             SELECT
                 p.*,
+                c.name AS category_name,
                 img.image_url,
                 COALESCE(SUM(v.quantity),0) AS total_quantity
+
             FROM products p
+
+            LEFT JOIN categories c
+                ON p.category_id = c.category_id
 
             LEFT JOIN product_variants v
                 ON p.product_id = v.product_id
@@ -78,7 +84,10 @@ class ProductModel
 
             WHERE p.product_id = ?
 
-            GROUP BY p.product_id, img.image_url
+            GROUP BY
+                p.product_id,
+                c.name,
+                img.image_url
         ';
 
         $stmt = $this->conn->prepare($sql);
@@ -87,9 +96,7 @@ class ProductModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    /* =========================
-       SEARCH
-    ========================= */
+    /*  SEARCH */
     public function searchProducts($keyword)
     {
         $sql = '
@@ -100,9 +107,13 @@ class ProductModel
                 p.description,
                 p.status,
                 p.category_id,
+                c.name AS category_name,
                 img.image_url,
                 COALESCE(SUM(v.quantity),0) AS total_quantity
             FROM products p
+
+            LEFT JOIN categories c
+                ON p.category_id = c.category_id
 
             LEFT JOIN product_variants v
                 ON p.product_id = v.product_id
@@ -120,6 +131,7 @@ class ProductModel
                 p.description,
                 p.status,
                 p.category_id,
+                c.name,
                 img.image_url
 
             ORDER BY p.product_id DESC
@@ -132,9 +144,7 @@ class ProductModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /* =========================
-       GET BY CATEGORY
-    ========================= */
+    /*  GET BY CATEGORY */
     public function getProductsByCategory($categoryId)
     {
         $sql = '
@@ -145,9 +155,13 @@ class ProductModel
                 p.description,
                 p.status,
                 p.category_id,
+                c.name AS category_name,
                 img.image_url,
                 COALESCE(SUM(v.quantity),0) AS total_quantity
             FROM products p
+
+            LEFT JOIN categories c
+                ON p.category_id = c.category_id
 
             LEFT JOIN product_variants v
                 ON p.product_id = v.product_id
@@ -165,6 +179,7 @@ class ProductModel
                 p.description,
                 p.status,
                 p.category_id,
+                c.name,
                 img.image_url
 
             ORDER BY p.product_id DESC
@@ -176,9 +191,7 @@ class ProductModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /* =========================
-       VARIANTS
-    ========================= */
+    /* VARIANTS */
     public function getVariantsByProduct($productId)
     {
         $stmt = $this->conn->prepare('
@@ -208,9 +221,7 @@ class ProductModel
         return $row['has_size'] > 0 || $row['has_color'] > 0;
     }
 
-    /* =========================
-       PRICE RANGE (BASE)
-    ========================= */
+    /*  PRICE RANGE (BASE) */
     public function getPriceRange($productId)
     {
         $stmt = $this->conn->prepare('
@@ -227,9 +238,7 @@ class ProductModel
         return $range ?: ['min_price' => 0, 'max_price' => 0];
     }
 
-    /* =========================
-       PROMOTION
-    ========================= */
+    /*   PROMOTION */
     public function getActivePromotion($productId)
     {
         $stmt = $this->conn->prepare("
@@ -248,9 +257,7 @@ class ProductModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    /* =========================
-       FINAL PRICE RANGE (AUTO APPLY PROMO)
-    ========================= */
+    /*  FINAL PRICE RANGE (AUTO APPLY PROMO) */
     public function getFinalPriceRange($productId)
     {
         $range = $this->getPriceRange($productId);
@@ -278,9 +285,7 @@ class ProductModel
         ];
     }
 
-    /* =========================
-       FINAL PRICE SINGLE VARIANT
-    ========================= */
+    /*  FINAL PRICE SINGLE VARIANT */
     public function getFinalPrice($productId, $size = '', $color = '')
     {
         $stmt = $this->conn->prepare('
@@ -325,12 +330,16 @@ class ProductModel
             p.description,
             p.status,
             p.category_id,
+            c.name AS category_name,
             p.collection_id,
             p.created_at,
             p.updated_at,
             img.image_url,
             COALESCE(SUM(v.quantity),0) AS total_quantity
         FROM products p
+
+        LEFT JOIN categories c
+            ON p.category_id = c.category_id
 
         LEFT JOIN product_variants v
             ON p.product_id = v.product_id
@@ -348,6 +357,7 @@ class ProductModel
             p.description,
             p.status,
             p.category_id,
+            c.name,
             p.collection_id,
             p.created_at,
             p.updated_at,

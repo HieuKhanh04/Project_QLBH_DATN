@@ -164,22 +164,41 @@ if (isset($_POST['deleteCollection'])) {
     exit;
 }
 
-/* LẤY DỮ LIỆU */
+/* TÌM KIẾM */
+$keyword = trim($_GET['keyword'] ?? '');
 
-$stmt = $conn->query('
+$sql = '
 SELECT
     c.*,
-    COUNT(p.product_id) product_count
+    COUNT(p.product_id) AS product_count
 FROM collections c
-
 LEFT JOIN products p
-ON c.collection_id=p.collection_id
+ON c.collection_id = p.collection_id
+WHERE 1
+';
 
+$params = [];
+
+if ($keyword != '') {
+    $sql .= '
+        AND (
+            c.name LIKE ?
+            OR c.slug LIKE ?
+            OR c.description LIKE ?
+        )
+    ';
+
+    $search = "%{$keyword}%";
+    $params = [$search, $search, $search];
+}
+
+$sql .= '
 GROUP BY c.collection_id
+ORDER BY c.collection_id DESC
+';
 
-ORDER BY
-c.collection_id DESC
-');
+$stmt = $conn->prepare($sql);
+$stmt->execute($params);
 
 $collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -329,6 +348,64 @@ $collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
             margin-bottom:25px;
         }
 
+        .search-group{
+            display:flex;
+            align-items:center;
+            gap:12px;
+        }
+
+        .search-box{
+            width:340px;
+            height:48px;
+            display:flex;
+            align-items:center;
+            background:#fff;
+            border:1px solid #ffd9ea;
+            border-radius:14px;
+            overflow:hidden;
+        }
+
+        .search-box input{
+            flex:1;
+            border:none;
+            outline:none;
+            padding:0 15px;
+            font-size:15px;
+            background:transparent;
+        }
+
+        .search-box button{
+            width:50px;
+            height:100%;
+            border:none;
+            background:none;
+            color:#ff4fa3;
+            cursor:pointer;
+            font-size:16px;
+        }
+
+        .search-box button:hover{
+            background:#fff0f7;
+        }
+
+        .reset-btn{
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            height:48px;
+            padding:0 20px;
+            border-radius:14px;
+            background:#eee;
+            color:#555;
+            text-decoration:none;
+            font-weight:bold;
+            transition:.2s;
+        }
+
+        .reset-btn:hover{
+            background:#ddd;
+        }
+
         .add-btn{
             background:#ff4fa3;
             color:white;
@@ -336,7 +413,6 @@ $collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
             padding:14px 22px;
             border-radius:14px;
             cursor:pointer;
-            font-weight:bold;
         }
 
         .table-box{
@@ -518,7 +594,7 @@ $collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </a>
 
                 <a href="collections.php" class="active">
-                    <i class="fa-solid fa-images"></i>
+                    <i class="fa-solid fa-layer-group"></i>
                     Bộ sưu tập
                 </a>
 
@@ -582,17 +658,37 @@ $collections = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <div class="header">
-            <h2>
-                Danh sách bộ sưu tập
-            </h2>
+            <h2>Danh sách bộ sưu tập</h2>
+            <div style="display:flex;align-items:center;gap:15px;">
+                <div class="search-group">
+                    <form method="GET" class="search-box">
+                        <input
+                            type="text"
+                            name="keyword"
+                            placeholder="Tìm tên, slug hoặc mô tả..."
+                            value="<?php echo htmlspecialchars($keyword); ?>">
 
-            <button
-                class="add-btn"
-                onclick="openAddModal()">
+                        <button type="submit">
+                            <i class="fa fa-search"></i>
+                        </button>
 
-                <i class="fa-solid fa-plus"></i>
-                Thêm bộ sưu tập
-            </button>
+                    </form>
+
+                    <?php if ($keyword != '') { ?>
+                        <a href="collections.php" class="reset-btn">
+                            Tất cả
+                        </a>
+                    <?php } ?>
+
+                </div>
+
+                <button
+                    class="add-btn"
+                    onclick="openAddModal()">
+                    <i class="fa-solid fa-plus"></i>
+                    Thêm bộ sưu tập
+                </button>
+            </div>
         </div>
 
         <div class="table-box">

@@ -102,14 +102,39 @@ if (isset($_POST['deleteNotification'])) {
     exit;
 }
 
-/* LẤY DỮ LIỆU */
-$stmt = $conn->query('
+/* TÌM KIẾM */
+$keyword = trim($_GET['keyword'] ?? '');
+
+$sql = '
     SELECT *
     FROM notifications
-    ORDER BY
-        is_pinned DESC,
-        created_at DESC
-');
+    WHERE 1
+';
+
+$params = [];
+
+if ($keyword != '') {
+    $sql .= '
+        AND (
+            title LIKE ?
+            OR content LIKE ?
+            OR type LIKE ?
+            OR status LIKE ?
+        )
+    ';
+
+    $search = "%{$keyword}%";
+    $params = [$search, $search, $search, $search];
+}
+
+$sql .= '
+ORDER BY
+    is_pinned DESC,
+    created_at DESC
+';
+
+$stmt = $conn->prepare($sql);
+$stmt->execute($params);
 
 $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -242,6 +267,64 @@ body{
     margin-bottom:20px;
 }
 
+.search-group{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.search-box{
+    width:340px;
+    height:48px;
+    display:flex;
+    align-items:center;
+    background:#fff;
+    border:1px solid #ffd9ea;
+    border-radius:14px;
+    overflow:hidden;
+}
+
+.search-box input{
+    flex:1;
+    border:none;
+    outline:none;
+    padding:0 15px;
+    font-size:15px;
+    background:transparent;
+}
+
+.search-box button{
+    width:50px;
+    height:100%;
+    border:none;
+    background:none;
+    color:#ff4fa3;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.search-box button:hover{
+    background:#fff0f7;
+}
+
+.reset-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:48px;
+    padding:0 20px;
+    border-radius:14px;
+    background:#eee;
+    color:#555;
+    text-decoration:none;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.reset-btn:hover{
+    background:#ddd;
+}
+
 th{
     text-align:left;
     color:#999;
@@ -286,8 +369,8 @@ table td{
     background:#ff4fa3;
     color:white;
     border:none;
-    padding:12px 18px;
-    border-radius:12px;
+    padding:14px 22px;
+    border-radius:14px;
     cursor:pointer;
 }
 
@@ -456,7 +539,7 @@ table td{
             </a>
 
             <a href="collections.php">
-                <i class="fa-regular fa-images"></i>
+                <i class="fa-solid fa-layer-group"></i>
                 Bộ sưu tập
             </a>
 
@@ -502,9 +585,7 @@ table td{
 
 <!-- CONTENT -->
 <div class="main-content">
-
     <div class="topbar">
-
         <div class="page-title">
             <h1>
                 Quản lý thông báo
@@ -527,23 +608,37 @@ table td{
     </div>
 
     <div class="header">
+        <h2>Danh sách thông báo</h2>
+        <div style="display:flex;align-items:center;gap:15px;">
+            <div class="search-group">
+                <form method="GET" class="search-box">
+                    <input
+                        type="text"
+                        name="keyword"
+                        placeholder="Tìm tiêu đề, nội dung, loại..."
+                        value="<?php echo htmlspecialchars($keyword); ?>">
+                    <button type="submit">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </form>
 
-        <h2>
-            Danh sách thông báo
-        </h2>
+                <?php if ($keyword != '') { ?>
+                    <a href="notifications.php" class="reset-btn">
+                        Tất cả
+                    </a>
+                <?php } ?>
+            </div>
 
-        <button
-            class="add-btn"
-            onclick="openAddModal()">
-            + Thêm thông báo
-        </button>
-
+            <button
+                class="add-btn"
+                onclick="openAddModal()">
+                + Thêm thông báo
+            </button>
+        </div>
     </div>
 
     <div class="table-box">
-
         <table>
-
             <tr>
                 <th>Tiêu đề</th>
                 <th>Loại</th>
@@ -557,7 +652,6 @@ table td{
             <?php foreach ($notifications as $n) { ?>
 
             <tr>
-
                 <td>
                     <strong>
                         <?php echo htmlspecialchars($n['title']); ?>
@@ -565,7 +659,6 @@ table td{
                 </td>
 
                 <td>
-
                     <?php
                     switch ($n['type']) {
                         case 'promotion':
@@ -602,11 +695,9 @@ table td{
                         </span>
 
                     <?php } ?>
-
                 </td>
 
                 <td>
-
                     <?php
                 echo $n['start_date']
                     ? date('d/m/Y', strtotime($n['start_date']))
@@ -620,7 +711,6 @@ table td{
                     ? date('d/m/Y', strtotime($n['end_date']))
                     : '-';
                 ?>
-
                 </td>
 
                 <td>

@@ -531,7 +531,7 @@ function statusClass($status)
                     </a>
 
                     <a href="collections.php">
-                        <i class="fa-regular fa-images"></i>
+                        <i class="fa-solid fa-layer-group"></i>
                         Bộ sưu tập
                     </a>
 

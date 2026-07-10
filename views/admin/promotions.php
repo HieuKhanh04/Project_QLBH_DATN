@@ -79,12 +79,34 @@ if (isset($_POST['deletePromotion'])) {
     exit;
 }
 
-/* LẤY DỮ LIỆU */
-$stmt = $conn->query('
+/* TÌM KIẾM */
+$keyword = trim($_GET['keyword'] ?? '');
+
+$sql = '
     SELECT *
     FROM promotions
-    ORDER BY promotion_id DESC
-');
+    WHERE 1
+';
+
+$params = [];
+
+if ($keyword != '') {
+    $sql .= '
+        AND (
+            code LIKE ?
+            OR discount_type LIKE ?
+            OR status LIKE ?
+        )
+    ';
+
+    $search = "%{$keyword}%";
+    $params = [$search, $search, $search];
+}
+
+$sql .= ' ORDER BY promotion_id DESC';
+
+$stmt = $conn->prepare($sql);
+$stmt->execute($params);
 $promotions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
@@ -100,7 +122,6 @@ $promotions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
-
 /* RESET */
 *{
     margin:0;
@@ -256,8 +277,8 @@ table td{
     background:#ff4fa3;
     color:white;
     border:none;
-    padding:12px 18px;
-    border-radius:12px;
+    padding:14px 22px;
+    border-radius:14px;
     cursor:pointer;
 }
 
@@ -266,6 +287,64 @@ table td{
     justify-content:space-between;
     align-items:center;
     margin-bottom:20px;
+}
+
+.search-group{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.search-box{
+    width:340px;
+    height:48px;
+    display:flex;
+    align-items:center;
+    background:#fff;
+    border:1px solid #ffd9ea;
+    border-radius:14px;
+    overflow:hidden;
+}
+
+.search-box input{
+    flex:1;
+    border:none;
+    outline:none;
+    padding:0 15px;
+    font-size:15px;
+    background:transparent;
+}
+
+.search-box button{
+    width:50px;
+    height:100%;
+    border:none;
+    background:none;
+    color:#ff4fa3;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.search-box button:hover{
+    background:#fff0f7;
+}
+
+.reset-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:48px;
+    padding:0 20px;
+    border-radius:14px;
+    background:#eee;
+    color:#555;
+    text-decoration:none;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.reset-btn:hover{
+    background:#ddd;
 }
 
 .admin-box{
@@ -433,7 +512,7 @@ table td{
             </a>
 
             <a href="collections.php">
-                <i class="fa-regular fa-images"></i>
+                <i class="fa-solid fa-layer-group"></i>
                 Bộ sưu tập
             </a>
 
@@ -497,17 +576,36 @@ table td{
 
     <div class="header">
         <h2>Danh sách khuyến mãi</h2>
-        <button
-            class="add-btn"
-            onclick="openAddModal()">
-            + Thêm mã
-        </button>
+        <div style="display:flex;align-items:center;gap:15px;">
+            <div class="search-group">
+                <form method="GET" class="search-box">
+                    <input
+                        type="text"
+                        name="keyword"
+                        placeholder="Tìm mã, loại hoặc trạng thái..."
+                        value="<?php echo htmlspecialchars($keyword); ?>">
+                    <button type="submit">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </form>
+
+                <?php if ($keyword != '') { ?>
+                    <a href="promotions.php" class="reset-btn">
+                        Tất cả
+                    </a>
+                <?php } ?>
+            </div>
+
+            <button
+                class="add-btn"
+                onclick="openAddModal()">
+                + Thêm mã
+            </button>
+        </div>
     </div>
 
     <div class="table-box">
-
         <table>
-
             <tr>
                 <th>Mã</th>
                 <th>Loại</th>

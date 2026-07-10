@@ -62,12 +62,29 @@ if (isset($_GET['cancel'])) {
     exit;
 }
 
-/* LẤY ĐƠN HÀNG */
-$stmt = $conn->query('
-    SELECT *
-    FROM orders
-    ORDER BY order_id DESC
-');
+/* TÌM KIẾM */
+$keyword = trim($_GET['keyword'] ?? '');
+if ($keyword != '') {
+    $stmt = $conn->prepare('
+        SELECT *
+        FROM orders
+        WHERE order_code LIKE ?
+           OR receiver_name LIKE ?
+           OR receiver_phone LIKE ?
+        ORDER BY order_id DESC
+    ');
+    $stmt->execute([
+        "%$keyword%",
+        "%$keyword%",
+        "%$keyword%",
+    ]);
+} else {
+    $stmt = $conn->query('
+        SELECT *
+        FROM orders
+        ORDER BY order_id DESC
+    ');
+}
 $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
@@ -84,7 +101,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 
 <style>
 
-/* ================= RESET ================= */
+/*  RESET  */
 *{
     margin:0;
     padding:0;
@@ -96,12 +113,12 @@ body{
     background:#fff5f9;
 }
 
-/* ================= LAYOUT ================= */
+/*  LAYOUT  */
 .admin-container{
     display:flex;
 }
 
-/* ================= SIDEBAR (GIỮ NGUYÊN 100% PRODUCTS) ================= */
+/*  SIDEBAR (GIỮ NGUYÊN 100% PRODUCTS)  */
 .sidebar{
     width:260px;
     background:white;
@@ -170,7 +187,7 @@ body{
     margin-top:15px;
 }
 
-/* ================= CONTENT ================= */
+/*  CONTENT  */
 .main-content{
     flex:1;
     margin-left:260px;
@@ -203,6 +220,71 @@ body{
     width:50px;
     height:50px;
     border-radius:50%;
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.search-group{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.reset-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:48px;
+    padding:0 20px;
+    border-radius:14px;
+    background:#eee;
+    color:#555;
+    text-decoration:none;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.reset-btn:hover{
+    background:#ddd;
+}
+
+.search-box{
+    width:340px;
+    height:48px;
+    display:flex;
+    align-items:center;
+    background:#fff;
+    border:1px solid #ffd9ea;
+    border-radius:14px;
+    overflow:hidden;
+}
+
+.search-box input{
+    flex:1;
+    border:none;
+    outline:none;
+    padding:0 15px;
+    font-size:15px;
+    background:transparent;
+}
+
+.search-box button{
+    width:50px;
+    height:100%;
+    border:none;
+    background:none;
+    color:#ff4fa3;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.search-box button:hover{
+    background:#fff0f7;
 }
 
 /* TABLE */
@@ -375,7 +457,7 @@ table td{
 
 <div class="admin-container">
 
-<!-- SIDEBAR (GIỮ NGUYÊN 100% TỪ PRODUCTS.PHP) -->
+<!-- SIDEBAR -->
 <div class="sidebar">
     <a href="admin_dashboard.php" class="logo">
         HAN STORE
@@ -383,7 +465,6 @@ table td{
 
     <div class="sidebar-content">
         <div class="menu">
-
             <div class="menu-title">MENU CHÍNH</div>
 
             <a href="admin_dashboard.php">
@@ -429,7 +510,7 @@ table td{
             </a>
 
             <a href="collections.php">
-                <i class="fa-regular fa-images"></i>
+                <i class="fa-solid fa-layer-group"></i>
                 Bộ sưu tập
             </a>
             
@@ -470,17 +551,14 @@ table td{
 
 </div>
 
-<!-- CONTENT (GIỮ NGUYÊN) -->
+<!-- CONTENT -->
 <div class="main-content">
-
     <div class="topbar">
-
         <div class="page-title">
             <h1>Quản lý đơn hàng</h1>
-            <p>Theo dõi toàn bộ đơn hàng cửa hàng</p>
+            <p>Theo dõi toàn bộ đơn hàng của cửa hàng</p>
         </div>
 
-        <!-- ADMIN ACCOUNT -->
         <div class="admin-box">
             <img src="https://img.magnific.com/free-vector/smiling-woman-with-glasses_1308-177859.jpg?semt=ais_hybrid&w=740&q=80">
             <div>
@@ -488,14 +566,36 @@ table td{
                 <small>Quản trị viên</small>
             </div>
         </div>
+
+    </div>
+
+    <div class="header">
+        <h2>Đơn hàng gần đây</h2>
+        <div class="search-group">
+            <form method="GET" class="search-box">
+                <input
+                    type="text"
+                    name="keyword"
+                    placeholder="Tìm mã đơn, tên hoặc số điện thoại..."
+                    value="<?php echo htmlspecialchars($keyword); ?>">
+
+                <button type="submit">
+                    <i class="fa fa-search"></i>
+                </button>
+
+            </form>
+
+            <?php if ($keyword != '') { ?>
+                <a href="orders.php" class="reset-btn">
+                    Tất cả
+                </a>
+            <?php } ?>
+        </div>
     </div>
 
     <div class="table-box">
-
         <div class="chart-title">Đơn hàng gần đây</div>
-
         <table>
-
             <tr>
                 <th>Mã đơn</th>
                 <th>Khách hàng</th>

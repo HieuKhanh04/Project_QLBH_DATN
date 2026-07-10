@@ -287,7 +287,6 @@ body{
                 Báo cáo
             </a>
 
-            <!-- PHẦN BẠN BỊ THIẾU ĐÃ ĐƯỢC GIỮ NGUYÊN -->
             <div class="menu-title">QUẢN LÝ NỘI DUNG</div>
 
             <a href="categories.php">
@@ -296,7 +295,7 @@ body{
             </a>
 
             <a href="collections.php">
-                <i class="fa-regular fa-images"></i>
+                <i class="fa-solid fa-layer-group"></i>
                 Bộ sưu tập
             </a>
 

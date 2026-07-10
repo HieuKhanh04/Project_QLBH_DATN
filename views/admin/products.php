@@ -106,12 +106,30 @@ if ($keyword != '') {
     $stmt = $conn->prepare('
         SELECT
             p.*,
+            c.name AS category_name,
+            pi.image_url,
             COALESCE(SUM(v.quantity),0) AS total_quantity
+
         FROM products p
+
+        LEFT JOIN categories c
+            ON p.category_id = c.category_id
+
+        LEFT JOIN product_images pi
+            ON p.product_id = pi.product_id
+            AND pi.is_main = 1
+
         LEFT JOIN product_variants v
             ON p.product_id = v.product_id
+
         WHERE p.name LIKE ?
-        GROUP BY p.product_id
+
+        GROUP BY
+            p.product_id,
+            c.name,
+            pi.image_url
+
+        ORDER BY p.product_id DESC
         ');
     $stmt->execute(["%$keyword%"]);
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -329,40 +347,73 @@ body{
     border-radius:50%;
 }
 
-/* ACTION */
-.header-action{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:25px;
+.page-header{
+    margin-top:20px;
 }
 
-/* SEARCH */
-.search-box{
-    width:340px;
-    height:50px;
-    background:white;
-    border-radius:14px;
-    padding:0 16px;
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.search-group{
     display:flex;
     align-items:center;
-    justify-content:space-between;
-    border:1px solid #ffe3ef;
+    gap:12px;
+}
+
+.search-box{
+    width:340px;
+    height:48px;
+    display:flex;
+    align-items:center;
+    background:#fff;
+    border:1px solid #ffd9ea;
+    border-radius:14px;
+    overflow:hidden;
 }
 
 .search-box input{
+    flex:1;
     border:none;
     outline:none;
-    background:transparent;
-    flex:1;
+    padding:0 15px;
     font-size:15px;
+    background:transparent;
 }
 
-.search-btn{
+.search-box button{
+    width:50px;
+    height:100%;
     border:none;
     background:none;
     color:#ff4fa3;
     cursor:pointer;
+    font-size:16px;
+}
+
+.search-box button:hover{
+    background:#fff0f7;
+}
+
+.reset-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:48px;
+    padding:0 20px;
+    border-radius:14px;
+    background:#eee;
+    color:#555;
+    text-decoration:none;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.reset-btn:hover{
+    background:#ddd;
 }
 
 /* ADD BTN */
@@ -372,7 +423,6 @@ body{
     border:none;
     padding:14px 22px;
     border-radius:14px;
-    font-weight:bold;
     cursor:pointer;
 }
 
@@ -530,6 +580,23 @@ table td{
     background:#ff2d91;
 }
 
+.form-group textarea{
+    width:100%;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:12px;
+    font-size:14px;
+    resize:vertical;
+    font-family:Arial;
+}
+
+.form-group textarea:focus,
+.form-group input:focus,
+.form-group select:focus{
+    outline:none;
+    border-color:#ff4fa3;
+}
+
 </style>
 
 </head>
@@ -593,7 +660,7 @@ table td{
                 </a>
 
                 <a href="collections.php">
-                    <i class="fa-regular fa-images"></i>
+                    <i class="fa-solid fa-layer-group"></i>
                     Bộ sưu tập
                 </a>
 
@@ -638,10 +705,8 @@ table td{
 
 <!-- CONTENT -->
 <div class="main-content">
-
     <!-- TOP -->
     <div class="topbar">
-
         <div class="page-title">
             <h1>Quản lý sản phẩm</h1>
             <p>Quản lý kho hàng và sản phẩm</p>
@@ -659,24 +724,39 @@ table td{
     </div>
 
     <!-- ACTION -->
-    <div class="header-action">
+    <div class="header">
+        <h2>Danh sách sản phẩm</h2>
+        <div style="display:flex;align-items:center;gap:15px;">
+            <div class="search-group">
+                <form method="GET" class="search-box">
+                    <input
+                        type="text"
+                        name="keyword"
+                        placeholder="Tìm sản phẩm..."
+                        value="<?php echo htmlspecialchars($keyword); ?>">
 
-        <form method="GET" class="search-box">
-            <input type="text" name="keyword" placeholder="Tìm sản phẩm..." value="<?php echo $keyword; ?>">
-            <button class="search-btn"><i class="fa fa-search"></i></button>
-        </form>
+                    <button type="submit">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </form>
 
-        <button class="add-btn" onclick="openModal()">
-            <i class="fa fa-plus"></i> Thêm sản phẩm
-        </button>
+                <?php if ($keyword != '') { ?>
+                    <a href="products.php" class="reset-btn">
+                        Tất cả
+                    </a>
+                <?php } ?>
+            </div>
 
+            <button class="add-btn" onclick="openModal()">
+                <i class="fa fa-plus"></i>
+                Thêm sản phẩm
+            </button>
+        </div>
     </div>
 
     <!-- TABLE -->
     <div class="product-table">
-
         <table>
-
             <tr>
                 <th>Sản phẩm</th>
                 <th>Danh mục</th>
@@ -688,7 +768,6 @@ table td{
             <?php foreach ($products as $product) { ?>
 
             <tr>
-
                 <td>
                     <div class="product-info">
                         <!-- <img src="https://picsum.photos/100?<?php echo $product['product_id']; ?>"> -->
@@ -707,7 +786,7 @@ table td{
                     </div>
                 </td>
 
-                <td><?php echo $product['category_id']; ?></td>
+                <td><?php echo htmlspecialchars($product['category_name']); ?></td>
 
                 <td><?php echo $product['total_quantity']; ?></td>
 
@@ -745,127 +824,96 @@ table td{
 </div>
 
 </div>
-    <!-- MODAL ADD PRODUCT -->
+
+    <!-- ADD PRODUCT MODAL -->
     <div id="productModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>
-                    <i class="fa fa-plus"></i>
-                    Thêm sản phẩm
-                </h2>
-
-                <span class="close-btn"
-                    onclick="closeModal()">
-                    &times;
-                </span>
+                <i class="fa-solid fa-shirt modal-icon" style="color:#ff4fa3;"></i>
+                <h2>Thêm sản phẩm</h2>
             </div>
 
             <form method="POST" enctype="multipart/form-data">
-                <div class="form-grid">
-                    <!-- TÊN -->
-                    <div>
-                        <label>Tên sản phẩm</label>
-                        <input
-                            type="text"
-                            name="name"
-                            placeholder="Nhập tên sản phẩm"
-                            required>
-                    </div>
 
-                    <!-- GIÁ
-                    <div>
-                        <label>Giá sản phẩm</label>
-                        <input
-                            type="number"
-                            name="price"
-                            placeholder="VD: 500000"
-                            required>
-                    </div> -->
-
-                    <!-- CATEGORY -->
-                    <div>
-                        <label>Danh mục</label>
-                        <select
-                            name="category_id"
-                            required
-                            class="form-control">
-                            <option value="">
-                                -- Chọn danh mục --
-                            </option>
-
-                            <?php
-                            $cats = $conn->query(
-                                'SELECT * FROM categories'
-                            )->fetchAll(PDO::FETCH_ASSOC);
-foreach ($cats as $cat) {
-    ?>
-                            <option value="<?php echo $cat['category_id']; ?>">
-                                <?php echo $cat['name']; ?>
-                            </option>
-                            <?php } ?>
-                        </select>
-                    </div>
-
-                    <!-- SIZE
-                    <div>
-                        <label>Kích thước</label>
-                        <input
-                            type="text"
-                            name="size"
-                            placeholder="M, L, XL"
-                            required>
-                    </div>
-
-                    COLOR
-                    <div>
-                        <label>Màu sắc</label>
-                        <input
-                            type="text"
-                            name="color"
-                            placeholder="Đen, Trắng..."
-                            required>
-                    </div> -->
-
-                    <!-- QUANTITY
-                    <div>
-                        <label>Số lượng</label>
-                        <input
-                            type="number"
-                            name="quantity"
-                            min="0"
-                            required>
-                    </div> -->
+                <div class="form-group">
+                    <label>Tên sản phẩm</label>
+                    <input
+                        type="text"
+                        name="name"
+                        placeholder="Nhập tên sản phẩm"
+                        required>
                 </div>
 
-                <!-- IMAGE -->
-                <div class="mb-3">
-                    <label> Ảnh sản phẩm </label>
+                <div class="form-group">
+                    <label>Danh mục</label>
+                    <select
+                        name="category_id"
+                        required>
+
+                        <option value="">
+                            -- Chọn danh mục --
+                        </option>
+
+                        <?php
+                        $cats = $conn->query(
+                            'SELECT * FROM categories'
+                        )->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($cats as $cat) {
+    ?>
+
+                        <option value="<?php echo $cat['category_id']; ?>">
+                            <?php echo $cat['name']; ?>
+                        </option>
+
+                        <?php } ?>
+
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Ảnh sản phẩm</label>
+
                     <input
                         type="file"
                         name="image"
                         accept="image/*"
-                        class="form-control"
                         required>
                 </div>
 
-                <!-- DESCRIPTION -->
-                <div>
-                    <label> Mô tả </label>
+                <div class="form-group">
+                    <label>Mô tả</label>
 
                     <textarea
                         name="description"
                         rows="4"
-                        placeholder="Mô tả sản phẩm..."
+                        style="
+                            width:100%;
+                            padding:12px;
+                            border:1px solid #ddd;
+                            border-radius:12px;
+                            resize:vertical;
+                            font-size:14px;
+                        "
+                        placeholder="Nhập mô tả sản phẩm..."
                         required></textarea>
                 </div>
 
-                <button
-                    type="submit"
-                    name="add_product"
-                    class="save-btn">
-                    <i class="fa fa-save"></i>
-                    Lưu sản phẩm
-                </button>
+                <div class="modal-actions">
+                    <button
+                        type="button"
+                        class="cancel-btn"
+                        onclick="closeModal()">
+                        Hủy
+                    </button>
+
+                    <button
+                        type="submit"
+                        name="add_product"
+                        class="save-btn">
+                        Thêm
+                    </button>
+                </div>
             </form>
         </div>
     </div>

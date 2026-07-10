@@ -1,18 +1,43 @@
 <?php
 require_once '../../config/database.php';
 
-/* LẤY KHÁCH HÀNG (từ orders - vì bạn chưa có bảng users) */
-$stmt = $conn->query('
-    SELECT 
+/* TÌM KIẾM */
+$keyword = trim($_GET['keyword'] ?? '');
+
+/* LẤY KHÁCH HÀNG */
+$sql = '
+    SELECT
         receiver_name,
         receiver_phone,
         COUNT(order_id) AS total_orders,
         SUM(total_price) AS total_spent,
         MAX(created_at) AS last_order
     FROM orders
+    WHERE 1
+';
+
+$params = [];
+
+if ($keyword != '') {
+    $sql .= '
+        AND (
+            receiver_name LIKE ?
+            OR receiver_phone LIKE ?
+        )
+    ';
+
+    $search = "%$keyword%";
+    $params[] = $search;
+    $params[] = $search;
+}
+
+$sql .= '
     GROUP BY receiver_phone, receiver_name
     ORDER BY last_order DESC
-');
+';
+
+$stmt = $conn->prepare($sql);
+$stmt->execute($params);
 $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
@@ -135,6 +160,7 @@ body{
 
 .page-title p{
     color:#777;
+    margin-bottom:20px;
 }
 
 .admin-box{
@@ -149,18 +175,69 @@ body{
     border-radius:50%;
 }
 
-/* SEARCH */
-.search-box{
-    margin-bottom:20px;
+.header{
     display:flex;
-    gap:10px;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.search-group{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.search-box{
+    width:340px;
+    height:48px;
+    display:flex;
+    align-items:center;
+    background:#fff;
+    border:1px solid #ffd9ea;
+    border-radius:14px;
+    overflow:hidden;
 }
 
 .search-box input{
-    width:300px;
-    padding:10px 14px;
-    border:1px solid #ddd;
-    border-radius:12px;
+    flex:1;
+    border:none;
+    outline:none;
+    padding:0 15px;
+    font-size:15px;
+    background:transparent;
+}
+
+.search-box button{
+    width:50px;
+    height:100%;
+    border:none;
+    background:none;
+    color:#ff4fa3;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.search-box button:hover{
+    background:#fff0f7;
+}
+
+.reset-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:48px;
+    padding:0 20px;
+    border-radius:14px;
+    background:#eee;
+    color:#555;
+    text-decoration:none;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.reset-btn:hover{
+    background:#ddd;
 }
 
 /* TABLE */
@@ -206,9 +283,7 @@ table td{
 
 <!-- SIDEBAR -->
 <div class="sidebar">
-
     <a href="admin_dashboard.php" class="logo">HAN STORE</a>
-
     <div class="sidebar-content">
         <div class="menu">
 
@@ -257,7 +332,7 @@ table td{
             </a>
 
             <a href="collections.php">
-                <i class="fa-regular fa-images"></i>
+                <i class="fa-solid fa-layer-group"></i>
                 Bộ sưu tập
             </a>
 
@@ -300,9 +375,7 @@ table td{
 
 <!-- CONTENT -->
 <div class="main-content">
-
     <div class="topbar">
-
         <div class="page-title">
             <h1>Quản lý khách hàng</h1>
             <p>Danh sách khách hàng đã mua hàng</p>
@@ -315,13 +388,34 @@ table td{
                 <small>Quản trị viên</small>
             </div>
         </div>
+    </div>
 
+    <div class="header">
+        <h2>Danh sách khách hàng</h2>
+        <div class="search-group">
+            <form method="GET" class="search-box">
+                <input
+                    type="text"
+                    name="keyword"
+                    placeholder="Tìm theo tên hoặc số điện thoại..."
+                    value="<?php echo htmlspecialchars($keyword); ?>">
+
+                <button type="submit">
+                    <i class="fa fa-search"></i>
+                </button>
+
+            </form>
+
+            <?php if ($keyword != '') { ?>
+                <a href="customers.php" class="reset-btn">
+                    Tất cả
+                </a>
+            <?php } ?>
+        </div>
     </div>
 
     <div class="table-box">
-
         <table>
-
             <tr>
                 <th>Tên khách hàng</th>
                 <th>Số điện thoại</th>

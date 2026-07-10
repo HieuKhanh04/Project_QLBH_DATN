@@ -168,17 +168,42 @@ if (isset($_POST['deleteCategory'])) {
     exit;
 }
 
-/* LẤY DỮ LIỆU */
-$stmt = $conn->query('
-    SELECT 
+/* TÌM KIẾM */
+$keyword = trim($_GET['keyword'] ?? '');
+$sql = '
+    SELECT
         categories.*,
         COUNT(products.product_id) AS product_count
     FROM categories
     LEFT JOIN products
-    ON categories.category_id = products.category_id
+        ON categories.category_id = products.category_id
+    WHERE 1
+';
+$params = [];
+
+if ($keyword != '') {
+    $sql .= '
+        AND (
+            categories.name LIKE ?
+            OR categories.slug LIKE ?
+            OR categories.description LIKE ?
+        )
+    ';
+    $search = "%{$keyword}%";
+
+    $params = [
+        $search,
+        $search,
+        $search,
+    ];
+}
+$sql .= '
     GROUP BY categories.category_id
-    ORDER BY sort_order ASC, category_id DESC
-');
+    ORDER BY sort_order ASC,
+             category_id DESC
+';
+$stmt = $conn->prepare($sql);
+$stmt->execute($params);
 
 $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -302,12 +327,70 @@ body{
     margin:25px 0;
 }
 
+.search-group{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.search-box{
+    width:340px;
+    height:48px;
+    display:flex;
+    align-items:center;
+    background:#fff;
+    border:1px solid #ffd9ea;
+    border-radius:14px;
+    overflow:hidden;
+}
+
+.search-box input{
+    flex:1;
+    border:none;
+    outline:none;
+    padding:0 15px;
+    font-size:15px;
+    background:transparent;
+}
+
+.search-box button{
+    width:50px;
+    height:100%;
+    border:none;
+    background:none;
+    color:#ff4fa3;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.search-box button:hover{
+    background:#fff0f7;
+}
+
+.reset-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:48px;
+    padding:0 20px;
+    border-radius:14px;
+    background:#eee;
+    color:#555;
+    text-decoration:none;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.reset-btn:hover{
+    background:#ddd;
+}
+
 .add-btn{
     background:#ff4fa3;
     color:white;
     border:none;
-    padding:12px 18px;
-    border-radius:12px;
+    padding:14px 22px;
+    border-radius:14px;
     cursor:pointer;
 }
 
@@ -513,7 +596,7 @@ select{
             </a>
 
             <a href="collections.php">
-                <i class="fa-regular fa-images"></i>
+                <i class="fa-solid fa-layer-group"></i>
                 Bộ sưu tập
             </a>
 
@@ -579,15 +662,33 @@ select{
     </div>
 
     <div class="header">
-        <h2>
-            Danh sách danh mục
-        </h2>
+        <h2>Danh sách danh mục</h2>
+        <div style="display:flex;align-items:center;gap:15px;">
+            <div class="search-group">
+                <form method="GET" class="search-box">
+                    <input
+                        type="text"
+                        name="keyword"
+                        placeholder="Tìm tên, slug hoặc mô tả..."
+                        value="<?php echo htmlspecialchars($keyword); ?>">
+                    <button type="submit">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </form>
 
-        <button
-            class="add-btn"
-            onclick="openAddModal()">
-            + Thêm danh mục
-        </button>
+                <?php if ($keyword != '') { ?>
+                    <a href="categories.php" class="reset-btn">
+                        Tất cả
+                    </a>
+                <?php } ?>
+            </div>
+
+            <button
+                class="add-btn"
+                onclick="openAddModal()">
+                + Thêm danh mục
+            </button>
+        </div>
     </div>
 
     <div class="table-box">

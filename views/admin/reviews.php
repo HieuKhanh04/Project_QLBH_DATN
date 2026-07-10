@@ -227,32 +227,70 @@ body{
     border-radius:50%;
 }
 
-/* SEARCH */
-.search-box{
-    width:340px;
-    height:50px;
-    background:white;
-    border-radius:14px;
-    padding:0 16px;
+/* HEADER */
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.search-group{
     display:flex;
     align-items:center;
-    border:1px solid #ffe3ef;
-    margin-bottom:30px;
+    gap:12px;
+}
+
+.search-box{
+    width:340px;
+    height:48px;
+    display:flex;
+    align-items:center;
+    background:#fff;
+    border:1px solid #ffd9ea;
+    border-radius:14px;
+    overflow:hidden;
 }
 
 .search-box input{
+    flex:1;
     border:none;
     outline:none;
-    background:transparent;
-    flex:1;
+    padding:0 15px;
     font-size:15px;
+    background:transparent;
 }
 
-.search-btn{
+.search-box button{
+    width:50px;
+    height:100%;
     border:none;
     background:none;
     color:#ff4fa3;
     cursor:pointer;
+    font-size:16px;
+}
+
+.search-box button:hover{
+    background:#fff0f7;
+}
+
+.reset-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:48px;
+    padding:0 20px;
+    border-radius:14px;
+    background:#eee;
+    color:#555;
+    text-decoration:none;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.reset-btn:hover{
+    background:#ddd;
 }
 
 /* TABLE */
@@ -414,7 +452,7 @@ table td{
                 </a>
 
                 <a href="collections.php">
-                    <i class="fa-regular fa-images"></i>
+                    <i class="fa-solid fa-layer-group"></i>
                     Bộ sưu tập
                 </a>
 
@@ -477,15 +515,27 @@ table td{
     </div>
 
     <!-- SEARCH -->
-    <div class="header-action">
-        <form method="GET" class="search-box">
-            <input type="text" name="keyword"
-                   placeholder="Tìm đánh giá..."
-                   value="<?php echo htmlspecialchars($keyword ?? ''); ?>">
-            <button class="search-btn">
-                <i class="fa fa-search"></i>
-            </button>
-        </form>
+    <div class="header">
+        <h2>Danh sách đánh giá</h2>
+        <div class="search-group">
+            <form method="GET" class="search-box">
+                <input
+                    type="text"
+                    name="keyword"
+                    placeholder="Tìm sản phẩm, khách hàng..."
+                    value="<?php echo htmlspecialchars($keyword); ?>">
+
+                <button type="submit">
+                    <i class="fa fa-search"></i>
+                </button>
+            </form>
+
+            <?php if ($keyword != '') { ?>
+                <a href="reviews.php" class="reset-btn">
+                    Tất cả
+                </a>
+            <?php } ?>
+        </div>
     </div>
 
     <!-- TABLE -->

@@ -1,7 +1,7 @@
 <?php
 require_once '../../config/database.php';
 
-/* ===== KPI ===== */
+/*  KPI */
 $stmt = $conn->query('SELECT COUNT(order_id) AS orders FROM orders');
 $orders = $stmt->fetch(PDO::FETCH_ASSOC)['orders'] ?? 0;
 
@@ -21,7 +21,7 @@ $stmt = $conn->query('
 ');
 $customers = $stmt->fetch(PDO::FETCH_ASSOC)['customers'] ?? 0;
 
-/* ===== CHART 7 DAYS ===== */
+/*  CHART 7 DAYS */
 $stmt = $conn->query('
     SELECT 
         DATE(created_at) AS date,
@@ -40,7 +40,7 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     $values[] = (float) $row['revenue'];
 }
 
-/* ===== TOP PRODUCTS ===== */
+/*  TOP PRODUCTS */
 $stmt = $conn->query('
     SELECT 
         name AS product_name,
@@ -53,24 +53,45 @@ $stmt = $conn->query('
 
 $topProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* ===== RECENT ORDERS ===== */
-$stmt = $conn->query('
-    SELECT 
+/*  RECENT ORDERS */
+$stmt = $conn->query("
+    SELECT
         o.order_id,
         o.receiver_name,
         o.created_at,
         o.status,
         o.total_price,
-        od.name AS product_name,
-        od.quantity
+
+        GROUP_CONCAT(
+            od.name
+            SEPARATOR '<br>'
+        ) AS products,
+
+        GROUP_CONCAT(
+            od.quantity
+            SEPARATOR '<br>'
+        ) AS quantities
+
     FROM orders o
-    JOIN order_details od ON o.order_id = od.order_id
-    ORDER BY o.created_at DESC, o.order_id DESC
-    LIMIT 50
-');
+    LEFT JOIN order_details od
+        ON o.order_id = od.order_id
+
+    GROUP BY
+        o.order_id,
+        o.receiver_name,
+        o.created_at,
+        o.status,
+        o.total_price
+
+    ORDER BY
+        o.created_at DESC
+
+    LIMIT 10
+");
+
 $recentOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* ===== ORDER STATUS ===== */
+/*  ORDER STATUS */
 
 $pending = $conn->query("
     SELECT COUNT(*)
@@ -117,7 +138,7 @@ $totalOrders = $pending + $confirmed + $shipping + $delivered + $cancelled;
 
 <style>
 
-/* ===== RESET ===== */
+/*  RESET  */
 *{
     margin:0;
     padding:0;
@@ -131,7 +152,7 @@ body{
     overflow-x:hidden;
 }
 
-/* ===== LAYOUT ===== */
+/*  LAYOUT  */
 .admin-container{
     display:flex;
 }
@@ -203,7 +224,7 @@ body{
     margin-top:15px;
 }
 
-/* ===== CONTENT ===== */
+/*  CONTENT  */
 .main-content{
     flex:1;
     margin-left:260px;
@@ -474,8 +495,8 @@ body{
 }
 
 .order-table td{
-    padding:14px 12px;
-    border-bottom:1px solid #f5f5f5;
+    padding:14px 22px;
+    border-bottom:2px solid #f5f5f5;
     font-size:14px;
 }
 
@@ -666,7 +687,7 @@ body{
                 </a>
 
                 <a href="collections.php">
-                    <i class="fa-regular fa-images"></i>
+                    <i class="fa-solid fa-layer-group"></i>
                     Bộ sưu tập
                 </a>
 
@@ -829,11 +850,11 @@ body{
                             </td>
 
                             <td>
-                                <?php echo htmlspecialchars($o['product_name']); ?>
+                                <?php echo $o['products']; ?>
                             </td>
 
                             <td>
-                                <?php echo $o['quantity']; ?>
+                                <?php echo $o['quantities']; ?>
                             </td>
 
                             <td>
@@ -846,7 +867,7 @@ body{
                                 </span>
                             </td>
 
-                            <td>
+                            <td style="min-width:150px; white-space:nowrap;">
                                 <?php echo number_format($o['total_price']); ?> đ
                             </td>
                         </tr>

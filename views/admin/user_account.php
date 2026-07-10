@@ -98,6 +98,7 @@ if (isset($_POST['delete'])) {
 <meta charset="UTF-8">
 <title>Quản lý tài khoản người dùng</title>
 
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
@@ -232,7 +233,6 @@ body{
     border:1px solid #ffd9ea;
     border-radius:14px;
     overflow:hidden;
-    margin-top:18px;
 }
 
 .search-box input{
@@ -256,6 +256,43 @@ body{
 
 .search-box button:hover{
     background:#fff0f7;
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin:35px 0 25px;
+}
+
+.header h2{
+    margin:0;
+    font-size:28px;
+    font-weight:700;
+}
+
+.search-group{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.reset-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:48px;
+    padding:0 20px;
+    border-radius:14px;
+    background:#eee;
+    color:#555;
+    text-decoration:none;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.reset-btn:hover{
+    background:#ddd;
 }
 
 /* TABLE */
@@ -458,7 +495,7 @@ td{
                 </a>
 
                 <a href="collections.php">
-                    <i class="fa-regular fa-images"></i>
+                    <i class="fa-solid fa-layer-group"></i>
                     Bộ sưu tập
                 </a>
 
@@ -501,92 +538,109 @@ td{
     </div>
 
     <!-- MAIN -->
-<div class="main-content">
-    <div class="topbar">
-        <div class="page-title">
-            <h1>Quản lý tài khoản người dùng</h1>
-            <p>Quản lý thông tin tài khoản và trạng thái hoạt động của người dùng</p>
-
-            <form method="GET" class="search-box">
-                <input type="text" name="keyword" placeholder="Tìm user..."
-                    value="<?php echo htmlspecialchars($keyword); ?>">
-                <button><i class="fa fa-search"></i></button>
-            </form>
-        </div>
-
-        <!-- ADMIN ACCOUNT -->
-        <div class="admin-box">
-            <img src="https://img.magnific.com/free-vector/smiling-woman-with-glasses_1308-177859.jpg?semt=ais_hybrid&w=740&q=80">
-            <div>
-                <strong>Admin</strong><br>
-                <small>Quản trị viên</small>
+    <div class="main-content">
+        <!-- TOP -->
+        <div class="topbar">
+            <div class="page-title">
+                <h1>Quản lý tài khoản người dùng</h1>
+                <p>Quản lý thông tin tài khoản và trạng thái hoạt động của người dùng</p>
             </div>
-            <!-- <i class="fa-solid fa-chevron-down"></i> -->
+
+            <div class="admin-box">
+                <img src="https://img.magnific.com/free-vector/smiling-woman-with-glasses_1308-177859.jpg?semt=ais_hybrid&w=740&q=80">
+                <div>
+                    <strong>Admin</strong><br>
+                    <small>Quản trị viên</small>
+                </div>
+            </div>
+
         </div>
-    </div>
 
-    <div class="table-box">
+        <!-- HEADER -->
+        <div class="header">
+            <h2>Danh sách tài khoản</h2>
+            <div class="search-group">
+                <form method="GET" class="search-box">
+                    <input
+                        type="text"
+                        name="keyword"
+                        placeholder="Tìm tài khoản người dùng..."
+                        value="<?php echo htmlspecialchars($keyword); ?>">
 
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>Họ tên</th>
-                <th>Email</th>
-                <th>SĐT</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-            </tr>
-
-            <?php foreach ($users as $u) { ?>
-            <tr>
-                <td>#<?php echo $u['user_id']; ?></td>
-
-                <td><?php echo htmlspecialchars($u['name']); ?></td>
-
-                <td><?php echo htmlspecialchars($u['email']); ?></td>
-
-                <td><?php echo htmlspecialchars($u['phone']); ?></td>
-
-                <td>
-                    <?php if ($u['status'] == 1) { ?>
-                        <span style="color:#23b26d;font-weight:bold;">Hoạt động</span>
-                    <?php } else { ?>
-                        <span style="color:#ff4d6d;font-weight:bold;">Bị khóa</span>
-                    <?php } ?>
-                </td>
-
-                <td>
-                    <!-- XEM -->
-                    <button
-                        class="action-btn view-btn"
-                        onclick="location.href='user_detail.php?id=<?php echo $u['user_id']; ?>'">
-                        <i class="fa fa-eye"></i>
+                    <button type="submit">
+                        <i class="fa fa-search"></i>
                     </button>
+                </form>
 
-                    <!-- KHÓA -->
-                    <button
-                        type="button"
-                        class="action-btn lock-btn"
-                        onclick="openLockPopup(
+                <?php if ($keyword != '') { ?>
+                    <a href="user_account.php" class="reset-btn">
+                        Tất cả
+                    </a>
+                <?php } ?>
+
+            </div>
+
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-box">
+            <table>
+                <tr>
+                    <th>ID</th>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>SĐT</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+
+                <?php foreach ($users as $u) { ?>
+                <tr>
+                    <td>#<?php echo $u['user_id']; ?></td>
+
+                    <td><?php echo htmlspecialchars($u['name']); ?></td>
+
+                    <td><?php echo htmlspecialchars($u['email']); ?></td>
+
+                    <td><?php echo htmlspecialchars($u['phone']); ?></td>
+
+                    <td>
+                        <?php if ($u['status'] == 1) { ?>
+                            <span style="color:#23b26d;font-weight:bold;">Hoạt động</span>
+                        <?php } else { ?>
+                            <span style="color:#ff4d6d;font-weight:bold;">Bị khóa</span>
+                        <?php } ?>
+                    </td>
+
+                    <td>
+                        <button
+                            class="action-btn view-btn"
+                            onclick="location.href='user_detail.php?id=<?php echo $u['user_id']; ?>'">
+                            <i class="fa fa-eye"></i>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="action-btn lock-btn"
+                            onclick="openLockPopup(
                                 <?php echo $u['user_id']; ?>,
                                 <?php echo $u['status']; ?>
                             )">
-                        <i class="fa-solid <?php echo $u['status'] == 1 ? 'fa-lock' : 'fa-lock-open'; ?>"></i>
-                    </button>
+                            <i class="fa-solid <?php echo $u['status'] == 1 ? 'fa-lock' : 'fa-lock-open'; ?>"></i>
+                        </button>
 
-                    <!-- XÓA -->
-                    <button
-                        type="button"
-                        class="action-btn delete-btn"
-                        onclick="openDeletePopup(<?php echo $u['user_id']; ?>)">
-                        <i class="fa fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-            <?php } ?>
-        </table>
+                        <button
+                            type="button"
+                            class="action-btn delete-btn"
+                            onclick="openDeletePopup(<?php echo $u['user_id']; ?>)">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                <?php } ?>
+            </table>
+        </div>
     </div>
-</div>
 
 <div id="lockModal" class="modal">
     <div class="modal-content">
